@@ -24,47 +24,44 @@ The main user stories are:
 
 The following diagram summarizes the main interactions between AZFlow and its external actors. It intentionally stays at requirements level and does not show implementation components.
 
-```plantuml
-@startuml
-left to right direction
+```mermaid
+flowchart LR
+    Patient([Patient])
+    Operator([Operator])
+    AppointmentSource([External appointment source])
+    WaitingDisplay([Waiting-room display])
+    RoomDisplay([Room display])
 
-actor Patient
-actor Operator
-actor "External appointment source" as AppointmentSource
-actor "Waiting-room display" as WaitingDisplay
-actor "Room display" as RoomDisplay
+    subgraph AZFlow
+        CheckIn([Check in])
+        RetrieveAppointments([Retrieve Appointments])
+        ViewQueue([View Queue])
+        CallNext([Call next Patient])
+        CallSpecific([Call specific Patient])
+        Suspend([Suspend ServiceAccess])
+        Restore([Restore ServiceAccess])
+        Admit([Confirm admission])
+        Cancel([Cancel call])
+        Recall([Recall Patient])
+        ShowWaiting([Show waiting-room calls])
+        ShowRoom([Show Room call])
+    end
 
-rectangle AZFlow {
-  usecase "Check in" as UC_CheckIn
-  usecase "View Queue" as UC_ViewQueue
-  usecase "Call next Patient" as UC_CallNext
-  usecase "Call specific Patient" as UC_CallSpecific
-  usecase "Suspend ServiceAccess" as UC_Suspend
-  usecase "Restore ServiceAccess" as UC_Restore
-  usecase "Confirm admission" as UC_Admit
-  usecase "Cancel call" as UC_Cancel
-  usecase "Recall Patient" as UC_Recall
-  usecase "Show waiting-room calls" as UC_WaitingDisplay
-  usecase "Show Room call" as UC_RoomDisplay
-  usecase "Retrieve Appointments" as UC_Appointments
-}
+    Patient --> CheckIn
+    CheckIn -. include .-> RetrieveAppointments
+    AppointmentSource --> RetrieveAppointments
 
-Patient --> UC_CheckIn
-UC_CheckIn ..> UC_Appointments : <<include>>
-AppointmentSource --> UC_Appointments
+    Operator --> ViewQueue
+    Operator --> CallNext
+    Operator --> CallSpecific
+    Operator --> Suspend
+    Operator --> Restore
+    Operator --> Admit
+    Operator --> Cancel
+    Operator --> Recall
 
-Operator --> UC_ViewQueue
-Operator --> UC_CallNext
-Operator --> UC_CallSpecific
-Operator --> UC_Suspend
-Operator --> UC_Restore
-Operator --> UC_Admit
-Operator --> UC_Cancel
-Operator --> UC_Recall
-
-WaitingDisplay --> UC_WaitingDisplay
-RoomDisplay --> UC_RoomDisplay
-@enduml
+    WaitingDisplay --> ShowWaiting
+    RoomDisplay --> ShowRoom
 ```
 
 ## Glossary
