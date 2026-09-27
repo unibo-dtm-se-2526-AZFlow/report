@@ -25,43 +25,45 @@ The main user stories are:
 The following diagram summarizes the main interactions between AZFlow and its external actors. It intentionally stays at requirements level and does not show implementation components.
 
 ```mermaid
-flowchart LR
-    Patient([Patient])
-    Operator([Operator])
-    AppointmentSource([External appointment source])
-    WaitingDisplay([Waiting-room display])
-    RoomDisplay([Room display])
+usecase-beta
+direction LR
 
-    subgraph AZFlow
-        CheckIn([Check in])
-        RetrieveAppointments([Retrieve Appointments])
-        ViewQueue([View Queue])
-        CallNext([Call next Patient])
-        CallSpecific([Call specific Patient])
-        Suspend([Suspend ServiceAccess])
-        Restore([Restore ServiceAccess])
-        Admit([Confirm admission])
-        Cancel([Cancel call])
-        Recall([Recall Patient])
-        ShowWaiting([Show waiting-room calls])
-        ShowRoom([Show Room call])
-    end
+actor Patient
+actor AppointmentSource("External appointment source")
+actor Operator
+actor WaitingDisplay("Waiting-room display")
+actor RoomDisplay("Room display")
 
-    Patient --> CheckIn
-    CheckIn -. include .-> RetrieveAppointments
-    AppointmentSource --> RetrieveAppointments
+systemBoundary AZFlow
+  CheckIn("Check in")
+  RetrieveAppointments("Retrieve appointments")
+  ViewQueue("View queue")
+  CallNext("Call next patient")
+  CallSpecific("Call specific patient")
+  Suspend("Suspend service access")
+  Restore("Restore service access")
+  Admit("Confirm admission")
+  Cancel("Cancel call")
+  Recall("Recall patient")
+  ShowWaiting("Show waiting-room calls")
+  ShowRoom("Show room call")
+end
 
-    Operator --> ViewQueue
-    Operator --> CallNext
-    Operator --> CallSpecific
-    Operator --> Suspend
-    Operator --> Restore
-    Operator --> Admit
-    Operator --> Cancel
-    Operator --> Recall
+Patient --> CheckIn
+AppointmentSource --> RetrieveAppointments
+CheckIn ..> : include RetrieveAppointments
 
-    WaitingDisplay --> ShowWaiting
-    RoomDisplay --> ShowRoom
+Operator --> ViewQueue
+Operator --> CallNext
+Operator --> CallSpecific
+Operator --> Suspend
+Operator --> Restore
+Operator --> Admit
+Operator --> Cancel
+Operator --> Recall
+
+WaitingDisplay --> ShowWaiting
+RoomDisplay --> ShowRoom
 ```
 
 ## Glossary
