@@ -1,0 +1,35 @@
+@startuml
+left to right direction
+skinparam shadowing false
+skinparam linetype ortho
+skinparam packageStyle rectangle
+
+title AZFlow development and demonstration deployment
+
+node "Browser" as browser
+
+node "Development host" as host {
+  component "AZFlow\nUvicorn / FastAPI\n:8000" as azflow
+  component "MockAppointmentSource\n(in process)" as mock
+
+  frame "Docker Compose" as compose {
+    node "demo-web\nNginx :80" as nginx
+    node "Adminer\n:8080 internal" as adminer
+    database "PostgreSQL 16\n:5432 internal" as postgres
+    artifact "pgdata\nDocker volume" as volume
+  }
+}
+
+browser --> nginx : HTTP
+nginx --> azflow : HTTP / WebSocket\nhost.docker.internal:8000
+nginx --> adminer : /adminer/
+azflow --> postgres : PostgreSQL\nPOSTGRES_HOST / PORT
+adminer --> postgres : PostgreSQL\nservice name: postgres
+postgres --> volume : data files
+azflow -- mock
+
+note bottom of mock
+Current slice only.
+A production adapter can replace it.
+end note
+@enduml
