@@ -18,32 +18,17 @@ Both `development` and `master` therefore receive the same verification pipeline
 
 Conceptually, the pipeline is:
 
-```text
-Push / Pull Request / Manual run
-              |
-              v
-+-----------------------------+
-| Preliminary checks          |
-| compile, Ruff, mypy, format |
-| portable tests + coverage   |
-+--------------+--------------+
-               |
-        +------+------+
-        |             |
-        v             v
-+---------------+  +----------------------+
-| Compatibility |  | PostgreSQL           |
-| 3 OS x        |  | integration tests    |
-| 4 Python      |  | migrations + pytest  |
-+-------+-------+  +----------+-----------+
-        |                     |
-        +----------+----------+
-                   |
-                   v
-          +------------------+
-          | Deploy / release |
-          | dry-run or real  |
-          +------------------+
+```mermaid
+---
+config:
+  theme: default
+  layout: elk
+---
+flowchart LR
+    A["Push / Pull Request / Manual run"] --> B["Preliminary checks<br>compile, Ruff, mypy, format<br>portable tests + coverage"]
+    B --> C["Compatibility<br>3 OS × 4 Python"] & D["PostgreSQL integration tests<br>migrations + pytest"]
+    C --> E["Deploy / release<br>dry-run or real"]
+    D --> E
 ```
 
 ## Preliminary quality gate
