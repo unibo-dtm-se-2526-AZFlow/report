@@ -10,6 +10,18 @@ The main modelling problem in AZFlow is that an appointment is not the same thin
 
 The domain model therefore introduces an operational layer around the external appointment data. The central concepts are `DailyPresence` and `ServiceAccess`, together with `Agenda` and `Queue` for the organization of services.
 
+| Concept | Role in AZFlow |
+| --- | --- |
+| `PatientIdentifier` | Value object used to identify the patient where identification is required, without introducing a local Patient registry. |
+| `Appointment` | Scheduling information received from an external source. |
+| `DailyPresence` | One patient's operational journey during an operational day. |
+| `ServiceAccess` | One service managed during a DailyPresence and the owner of its operational state. |
+| `Agenda` | Local identity of a healthcare service. |
+| `ExternalAgenda` | Mapping between a local Agenda and an external scheduling source. |
+| `Queue` | Operational grouping of Agendas that defines how eligible accesses are ordered. |
+| `TicketMaster` | Namespace and prefix used when allocating public call codes. |
+| `ExternalSource` | Configuration of an external scheduling source connected to AZFlow. |
+
 ## Patient identification and daily presence
 
 AZFlow does not introduce a persistent `Patient` entity. For the current slice the patient is represented by a `PatientIdentifier`, a value object containing an identifier type and value. This is enough to find appointments during check-in without duplicating a patient registry that belongs to other hospital systems.
@@ -38,6 +50,14 @@ The public call code belongs to `DailyPresence` rather than to a single `Service
 
 This also separates the identifier used internally for check-in from the information displayed in public areas. Displays work with the public call code and operational information and do not need the patient identifier.
 
+## Core class relationships
+
+The following UML class diagram summarizes the main domain concepts and their relationships. It intentionally omits location and display configuration because those structures support the workflow but are not part of the central patient-service model.
+
+![AZFlow core domain model]({{ site.baseurl }}/pictures/domain-model.svg)
+
+<a href="https://www.plantuml.com/plantuml/uml/ZLJ9Rjim4BtpAmO-5b2Geir529mOJGla4C25U-f5eAbnp9eY2NBaH2twxnrANYJRCdgnDSjxysQH7YF9G7Lb13aFv63fY5m5fGweI3ihuaPRBuEi8AvbwTwqVOMLD15x4MLaZ3EYe9SruRDoTg5_8zpsKeosI8r7S87MhXUmhiI87ZxTzPn1saroVhuJQrqYOEMfWGePMaOXI9D1cFtyPjmRPF351OGdLqbjuONfZ12j8fXBqcZfkUGVlT8OuFv-AqtDAfQ_kB_f5Fu8WAGhXqY1dzjmP_pTqyoyTzfInInCaBYesK5rcGE7-2cgDPQrmRAGb4Cf2KbNU2Hvajeqyy2zMeNZDCvZa6dmqXIbR3eczljwQRGgb3IcKDpZNYzNLHikgkr8tGM6hLOuKmhP6fTFZCo7sOlawutX5Mqfnocih4udz_MTC70hbw6uYnO1LnZIN5huGvBZwg2mE50-d7CksfHnEVqfNP3slSOQhy-ZZdcNjcYDj0N7IsXstdbh71b_QDu4lSX8xQ6D47jkLhyVnFHlAykc5qwMWNiZYk4L_GUWpp_vC6aXau-Jqytan_jbdU8asWSU09NqaRyOrt9FLfN3AhZgf8UKbsKmkRsvOUJmMdDu3QxsKGpTPr9Y5xwKnhGfipS5Vaamw2qtsghfxg1JtVuDM7c2_OIkxc3HETJnR35NijCRdANRR8yoUicwnIENJ1_XVm00" target="_blank" rel="noopener noreferrer">Edit on PlantUML</a> · [source]({{ site.baseurl }}/pictures/plantuml/domain-model.puml)
+
 ## Location and display configuration
 
 Rooms, totems, monitors and the location hierarchy are configuration concepts used by the operational workflow, but they are intentionally not embedded in the core `ServiceAccess` domain object. A call resolves a configured Room and its identifier is persisted with the operational access, while application ports expose the location and monitor information required by operators and displays.
@@ -49,3 +69,18 @@ This keeps the central service lifecycle independent from the physical topology.
 The resulting model separates three kinds of information that would otherwise be easy to mix: external scheduling information in `Appointment` and `ExternalAgenda`, AZFlow operational state in `DailyPresence` and `ServiceAccess`, and organizational configuration in `Agenda`, `Queue`, `TicketMaster` and the location-related structures. Application services coordinate these concepts, while repositories and read models are responsible for their persistent representation and for queries that combine them.
 
 This separation is also the boundary used for future integrations: replacing the current appointment source does not require changing the operational lifecycle, and changes to the physical location or display configuration do not change the meaning of an appointment or a service access.
+
+## DDD interpretation
+
+The model uses Domain-Driven Design concepts where they help describe the problem, but the current vertical slice does not introduce a complete DDD framework or explicit aggregate-root abstractions. AZFlow can be considered one Queue Management bounded context, while the external scheduling system remains outside that context and is translated at the `AppointmentSource` boundary.
+
+| DDD concept | AZFlow interpretation |
+| --- | --- |
+| **Bounded context** | The implemented slice is one Queue Management / patient-flow context; external scheduling remains outside it. |
+| **Value object** | `PatientIdentifier`. |
+| **Entities** | `Appointment`, `DailyPresence`, `ServiceAccess`, `Agenda`, `ExternalAgenda`, `Queue`, `TicketMaster` and `ExternalSource`. |
+| **Domain rules** | `ServiceAccess` defines the valid state transitions and rejects invalid ones. |
+| **Application services** | Check-in, Queue View, Calling and State Management coordinate use cases around the domain model. |
+| **Repositories and ports** | Interfaces are defined in the application layer and implemented by infrastructure adapters. |
+| **Factories** | No dedicated domain factories are introduced; creation is coordinated by application services and repositories where persistence-generated identity or sequences are required. |
+| **Domain events** | The model does not use a general domain-event architecture; `CallEvent` and display-state events are application-level notifications used to update displays. |

@@ -1,0 +1,73 @@
+@startuml
+top to bottom direction
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 35
+skinparam ranksep 45
+hide empty methods
+
+title AZFlow - Core Domain Model
+
+class PatientIdentifier <<value object>> {
+  type: str
+  value: str
+}
+
+class Appointment <<entity>> {
+  id: int
+  scheduled_at: datetime
+}
+
+class DailyPresence <<entity>> {
+  id: int
+  operational_day: date
+  public_call_code: str
+  checked_in_at: datetime
+}
+
+class ServiceAccess <<entity>> {
+  id: int
+  state: ServiceAccessState
+}
+
+class Agenda <<entity>> {
+  id: int
+  name: str
+}
+
+class ExternalAgenda <<entity>> {
+  external_reference: str?
+  source_name: str?
+}
+
+class ExternalSource <<entity>> {
+  id: int
+  code: str
+  name: str
+}
+
+class Queue <<entity>> {
+  id: int
+  status: QueueStatus
+  policy: QueuePolicy
+}
+
+class TicketMaster <<entity>> {
+  id: int
+  prefix: str
+}
+
+Appointment --> PatientIdentifier : identifies
+DailyPresence --> PatientIdentifier : identifies
+Appointment "*" --> "1" ExternalAgenda : scheduled in
+ExternalAgenda "*" --> "1" Agenda : maps to
+ExternalAgenda "*" --> "1" ExternalSource : from
+DailyPresence "1" -- "0..*" ServiceAccess : groups
+ServiceAccess --> "1" Agenda : service
+ServiceAccess --> "0..1" Appointment : derived from
+Queue "*" -- "*" Agenda : serves
+Queue "*" --> "1" TicketMaster : uses
+DailyPresence "*" --> "1" TicketMaster : call-code namespace
+
+@enduml
