@@ -1,0 +1,38 @@
+@startuml
+hide footbox
+skinparam shadowing false
+
+title Patient calling and display update
+
+actor Operator
+participant "HTTP API" as API
+participant "CallingService" as Service
+participant "QueueViewReader" as Reader
+participant "CallRepository" as Repo
+participant "WebSocketCallHub" as Hub
+participant "Public Displays" as Displays
+
+Operator -> API : call next(queue, room)
+API -> Service : call_next(queue, room)
+Service -> Reader : load Queue and candidates
+Reader --> Service : Queue + ServiceAccess candidates
+Service -> Repo : resolve Room
+Repo --> Service : room id
+
+loop until conditional transition succeeds
+  Service -> Repo : try_call(access, room, queue)
+  alt state is still WAITING
+    Repo --> Service : CALLED ServiceAccess
+  else concurrent change
+    Repo --> Service : no transition
+    Service -> Reader : reload candidates
+    Reader --> Service : current candidates
+  end
+end
+
+Service -> Hub : publish CallEvent
+Hub -> Hub : resolve affected monitors
+Hub -->> Displays : WebSocket update
+Service --> API : CallResult
+API --> Operator : called access + Room
+@enduml

@@ -1,0 +1,37 @@
+@startuml
+hide footbox
+skinparam shadowing false
+
+title Patient check-in
+
+actor Patient
+participant Totem
+participant "HTTP API" as API
+participant "CheckInService" as Service
+participant "AppointmentSource" as Source
+participant "CheckInRepository" as Repo
+
+Patient -> Totem : present identifier
+Totem -> API : POST check-in
+API -> Service : check_in(identifier, totem_id)
+Service -> Repo : validate Totem
+Service -> Source : find_for_day(identifier, day)
+Source --> Service : external appointments
+
+loop relevant appointments
+  Service -> Repo : resolve Agenda / active Queue
+  Repo --> Service : mapping
+  Service -> Repo : find or create Appointment
+end
+
+Service -> Repo : find or create DailyPresence
+Repo --> Service : DailyPresence + public call code
+
+loop imported appointments
+  Service -> Repo : find or create ServiceAccess
+end
+
+Service --> API : CheckInResult
+API --> Totem : public call code
+Totem --> Patient : print / show call code
+@enduml

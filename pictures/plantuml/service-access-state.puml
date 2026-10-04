@@ -1,0 +1,20 @@
+@startuml
+hide empty description
+skinparam shadowing false
+
+title ServiceAccess lifecycle
+
+[*] --> WAITING : created
+WAITING --> CALLED : call
+WAITING --> SUSPENDED : suspend
+SUSPENDED --> WAITING : restore
+SUSPENDED --> CALLED : call specific
+CALLED --> WAITING : cancel call
+CALLED --> ADMITTED : admit
+ADMITTED --> CALLED : recall
+
+note right of ADMITTED
+  No terminal completed state is
+  introduced in the current slice.
+end note
+@enduml
