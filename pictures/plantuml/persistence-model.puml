@@ -1,0 +1,131 @@
+@startuml
+hide methods
+hide stereotypes
+skinparam shadowing false
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+left to right direction
+
+title AZFlow persistent data model (main relationships)
+
+package "External scheduling" {
+  entity external_source {
+    * id : integer <<PK>>
+    --
+    code : text
+  }
+
+  entity external_agenda {
+    * id : integer <<PK>>
+    --
+    agenda_id : integer <<FK>>
+    external_source_id : integer <<FK>>
+    external_reference : text
+  }
+
+  entity appointment {
+    * id : integer <<PK>>
+    --
+    scheduled_at : timestamp
+    external_agenda_id : integer <<FK>>
+    patient_identifier_type : text
+    patient_identifier_value : text
+  }
+}
+
+package "Operational flow" {
+  entity daily_presence {
+    * id : integer <<PK>>
+    --
+    operational_day : date
+    public_call_code : text
+    ticket_master_id : integer <<FK>>
+    checked_in_at : timestamp
+    totem_id : integer <<FK>>
+  }
+
+  entity service_access {
+    * id : integer <<PK>>
+    --
+    daily_presence_id : integer <<FK>>
+    agenda_id : integer <<FK>>
+    appointment_id : integer <<FK>>
+    room_id : integer <<FK>>
+    state : text
+  }
+
+  entity service_access_transition {
+    * id : integer <<PK>>
+    --
+    service_access_id : integer <<FK>>
+    previous_state : text
+    resulting_state : text
+    occurred_at : timestamp
+    queue_id : integer <<FK>>
+  }
+}
+
+package "Queue configuration" {
+  entity agenda {
+    * id : integer <<PK>>
+    --
+    name : text
+  }
+
+  entity queue {
+    * id : integer <<PK>>
+    --
+    status : text
+    policy : text <<FK>>
+    ticket_master_id : integer <<FK>>
+  }
+
+  entity queue_policy {
+    * code : text <<PK>>
+    --
+    label : text
+  }
+
+  entity queue_agenda {
+    * queue_id : integer <<PK,FK>>
+    * agenda_id : integer <<PK,FK>>
+  }
+
+  entity ticket_master {
+    * id : integer <<PK>>
+    --
+    prefix : text
+  }
+
+  entity ticket_sequence {
+    * ticket_master_id : integer <<PK,FK>>
+    * operational_day : date <<PK>>
+    --
+    last_number : integer
+  }
+}
+
+entity room {
+  * id : integer <<PK>>
+  --
+  room_reference : text
+}
+
+external_source "1" -- "0..*" external_agenda
+agenda "1" -- "0..*" external_agenda
+external_agenda "1" -- "0..*" appointment
+
+daily_presence "1" -- "0..*" service_access
+appointment "0..1" -- "0..*" service_access : source
+agenda "1" -- "0..*" service_access
+room "0..1" -- "0..*" service_access : call-time room
+service_access "1" -- "0..*" service_access_transition
+queue "0..1" -- "0..*" service_access_transition : call provenance
+
+queue_policy "1" -- "0..*" queue
+queue "1" -- "0..*" queue_agenda
+agenda "1" -- "0..*" queue_agenda
+ticket_master "1" -- "0..*" queue
+ticket_master "1" -- "0..*" daily_presence
+ticket_master "1" -- "0..*" ticket_sequence
+@enduml
