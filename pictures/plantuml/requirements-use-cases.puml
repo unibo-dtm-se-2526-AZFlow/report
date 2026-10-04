@@ -12,11 +12,11 @@ rectangle AZFlow {
     usecase "Retrieve appointments" as RetrieveAppointments
     usecase "View queue" as ViewQueue
     usecase "Call next patient" as CallNext
-    usecase "Call specific patient" as CallSpecific
-    usecase "Suspend service access" as Suspend
-    usecase "Restore service access" as Restore
-    usecase "Confirm admission" as Admit
-    usecase "Cancel call" as Cancel
+    usecase "Call selected patient" as CallSpecific
+    usecase "Suspend patient service" as Suspend
+    usecase "Restore patient service" as Restore
+    usecase "Admit patient" as Admit
+    usecase "Cancel patient call" as Cancel
     usecase "Recall patient" as Recall
     usecase "Show waiting-room calls" as ShowWaiting
     usecase "Show room call" as ShowRoom
