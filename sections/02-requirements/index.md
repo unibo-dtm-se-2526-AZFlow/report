@@ -6,8 +6,6 @@ nav_order: 3
 
 # Requirements
 
-This chapter consolidates the requirements of the implemented AZFlow scope. During development, requirements were refined incrementally in feature specifications. The report presents the resulting system-level requirements rather than reproducing each development specification.
-
 ## User stories
 
 The main user stories are:
@@ -18,53 +16,15 @@ The main user stories are:
 - **Operator:** As an Operator, I want to suspend, restore, admit, cancel a call or recall a Patient when needed, so that the software follows the real operational workflow.
 - **Waiting Patient:** As a waiting Patient, I want public displays to show recent calls relevant to my location, so that I can recognize my public call code and destination Room.
 - **Room Patient:** As a Patient near a Room, I want its display to show the current call, so that I can verify that I am entering the correct Room.
-- **System integrator:** As a system integrator, I want external appointment systems to be accessed through a defined boundary, so that AZFlow does not depend on one specific external system.
+- **System integrator:** As a system integrator, I want AZFlow to obtain appointments from an external appointment source, so that existing hospital scheduling data can be used without being managed again inside AZFlow.
 
 ## Use cases
 
-The following diagram summarizes the main interactions between AZFlow and its external actors. It intentionally stays at requirements level and does not show implementation components.
+The following UML use-case diagram summarizes the main interactions between AZFlow and its external actors. It intentionally stays at requirements level and does not show implementation components.
 
-```mermaid
-usecase-beta
-direction LR
+![AZFlow use-case diagram]({{ site.baseurl }}/pictures/requirements-use-cases.svg)
 
-actor Patient
-actor AppointmentSource("External appointment source")
-actor Operator
-actor WaitingDisplay("Waiting-room display")
-actor RoomDisplay("Room display")
-
-systemBoundary AZFlow
-  CheckIn("Check in")
-  RetrieveAppointments("Retrieve appointments")
-  ViewQueue("View queue")
-  CallNext("Call next patient")
-  CallSpecific("Call specific patient")
-  Suspend("Suspend service access")
-  Restore("Restore service access")
-  Admit("Confirm admission")
-  Cancel("Cancel call")
-  Recall("Recall patient")
-  ShowWaiting("Show waiting-room calls")
-  ShowRoom("Show room call")
-end
-
-Patient --> CheckIn
-AppointmentSource --> RetrieveAppointments
-CheckIn ..> : include RetrieveAppointments
-
-Operator --> ViewQueue
-Operator --> CallNext
-Operator --> CallSpecific
-Operator --> Suspend
-Operator --> Restore
-Operator --> Admit
-Operator --> Cancel
-Operator --> Recall
-
-WaitingDisplay --> ShowWaiting
-RoomDisplay --> ShowRoom
-```
+[Edit on PlantUML](https://www.plantuml.com/plantuml/uml/TP9DJiCm48NtESKi38f45YW4aYGIwCGK1I3MeCKAaVPIYmnh3BRQNRzF9_RpUxtRzohM8v7FlU-x_lVkvWqJBAK0zKq28A9JO63QJWKgKRqk37S3M5Qf8YAXeDBX4cMSX8eaHHrL3Rc8HXKg54smHMl0OLn8w6bRWMJOo2c0HZJKp10nK8cqR31jPbRJjUjMR56oy-4fF0-DfGpcBSs3IqofvG2Gdqq8c8v20P8hwKtEl05WrIL_XBNOIrgQlQILrFfgML1dUjTwd5_FwMZdo2X8B4aC5z7GvIp9PvGKKoq_pPEf9bK-lFqgNEObXqvfjQ5iHhT_g7KXUsFJQ2Ued5CnFo4z6ZXeE9Unq-RnrW0bmxolSmc0HVFepND6pXl2UuLbmN5Pfl9VOX5D3GqZQd7xVdbL9SzaP8NSdtpVNEuk1Rn3UDIX3vmVx-j-fnJfEYL0lQm5t7D1AQcLYsLZdDPi1WHm8crXQGrkrnhcxJEDprM0vzslN7cUUFt7X6m00) · [source]({{ site.baseurl }}/pictures/plantuml/requirements-use-cases.puml)
 
 ## Glossary
 
@@ -206,14 +166,14 @@ AZFlow shall provide the Operator with the information and actions required to m
 
 ### FR11 - External appointment-source boundary
 
-AZFlow shall obtain appointment information through an external-source boundary rather than requiring appointment data to be owned by AZFlow.
+AZFlow shall obtain appointment information from a configured external source while keeping external scheduling information distinct from its operational state.
 
 **Acceptance criteria**
 
 - Check-in can query a configured appointment source using the Patient Identifier.
 - External scheduling information remains distinct from AZFlow operational state.
 - Source-specific patient and appointment references do not become AZFlow patient identities.
-- The implemented workflow can operate with a mock appointment source without changing the application behaviour.
+- Replacing the appointment source does not change the expected check-in behaviour.
 
 ## Non-functional requirements
 
@@ -254,7 +214,6 @@ The main domain and application behaviours shall be automatically verifiable ind
 
 - Automated tests cover domain/application behaviour and API behaviour.
 - Persistence integration tests run against a disposable database.
-- The project maintains the course target of at least 70% global line coverage.
 - Static checks and automated tests must pass before a release is produced.
 
 ## Implementation constraints
