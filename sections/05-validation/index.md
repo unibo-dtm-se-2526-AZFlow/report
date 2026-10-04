@@ -6,7 +6,7 @@ nav_order: 6
 
 # Validation
 
-Validation was performed at several levels so that domain rules could be checked quickly in isolation while persistence, HTTP adapters and WebSocket behaviour were also exercised against the real implementation. The final automated suite contains 418 tests. A separate deterministic browser demo documents useful demonstration scenarios, but it is not counted as validation evidence because the complete scenario set has not yet been re-verified after the latest changes.
+Validation was performed at several levels so that domain rules could be checked quickly in isolation while persistence, HTTP adapters and WebSocket behaviour were also exercised against the real implementation. The final automated suite contains 428 tests. A separate deterministic browser demo documents useful demonstration scenarios, but it is not counted as validation evidence because the complete scenario set has not yet been re-verified after the latest changes.
 
 ## Testing approach
 
@@ -19,7 +19,7 @@ The automated suite is divided into four groups. The groups are disjoint and tog
 | Test group | Main purpose | Cases | Final result |
 | --- | --- | ---: | ---: |
 | Unit/component | Domain rules, application services, configuration and infrastructure components tested without PostgreSQL | 209 | 209/209 passed |
-| API component | FastAPI HTTP/WebSocket adapters tested through `TestClient`, normally with service dependencies replaced by doubles | 111 | 111/111 passed |
+| API component | FastAPI HTTP/WebSocket adapters and production composition wiring tested through `TestClient` and focused composition tests | 121 | 121/121 passed |
 | Persistence integration | Psycopg repositories and read models exercised against real PostgreSQL | 85 | 85/85 passed |
 | System/end-to-end | Complete HTTP/WebSocket workflows through the wired application and real PostgreSQL adapters | 13 | 13/13 passed |
 
@@ -27,7 +27,7 @@ The normal `poe test` command can run without a database: PostgreSQL tests are s
 
 ### Coverage
 
-The final complete run reaches **94% line coverage** on the runtime `AZFlow` production modules. Alembic migration scripts are not included in that percentage: they are validated operationally by creating a fresh database and applying the full migration chain before the PostgreSQL integration suite.
+The final complete run reaches **97% line coverage** on the runtime `AZFlow` production modules. Alembic migration scripts are not included in that percentage: they are validated operationally by creating a fresh database and applying the full migration chain before the PostgreSQL integration suite.
 
 Coverage is more informative when split by architectural area:
 
@@ -35,11 +35,11 @@ Coverage is more informative when split by architectural area:
 | --- | ---: |
 | Domain | **97.4%** |
 | Application | **99.1%** |
-| API / FastAPI adapters | **87.6%** |
+| API / FastAPI adapters | **96.7%** |
 | Infrastructure | **94.1%** |
-| Runtime production code overall | **94%** |
+| Runtime production code overall | **96.6%** (97% rounded) |
 
-The individual test groups were also measured in isolation. These percentages are not additive: they show how strongly each group exercises the layer it primarily targets. Unit/component tests alone cover **97.4% of Domain** and **95.4% of Application**; API component tests cover **80.4% of the API/FastAPI layer**; persistence integration tests cover **89.4% of the PostgreSQL persistence adapters**. The end-to-end tests deliberately cross all layers, so their usefulness is reported through the workflows they exercise and their 13/13 success rate rather than by assigning them a single layer-specific coverage percentage.
+The individual test groups were also measured in isolation. These percentages are not additive: they show how strongly each group exercises the layer it primarily targets. Unit/component tests alone cover **97.4% of Domain** and **95.4% of Application**; API component tests cover **90.2% of the API/FastAPI layer**; persistence integration tests cover **89.4% of the PostgreSQL persistence adapters**. The end-to-end tests deliberately cross all layers, so their usefulness is reported through the workflows they exercise and their 13/13 success rate rather than by assigning them a single layer-specific coverage percentage.
 
 ### Requirement traceability
 
@@ -73,13 +73,13 @@ All **209 unit/component tests pass**. Their isolated run covers **97.4% of the 
 
 ### Integration testing
 
-Two integration-oriented groups exercise boundaries that unit tests replace with doubles. The **111 API component tests** combine FastAPI transport validation and application-service behaviour through `TestClient`, while the **85 persistence integration tests** execute the real Psycopg adapters against PostgreSQL and verify queries, transactions, constraints, topology traversal and conditional state transitions.
+Two integration-oriented groups exercise boundaries that unit tests replace with doubles. The **121 API component tests** combine FastAPI transport validation and application-service behaviour through `TestClient`, while the **85 persistence integration tests** execute the real Psycopg adapters against PostgreSQL and verify queries, transactions, constraints, topology traversal and conditional state transitions.
 
 The persistence fixtures require a dedicated `AZFLOW_TEST_DATABASE_URL`. Tables are truncated before and after each test, with identity sequences reset, so each case starts from a controlled database state. The local integration command starts PostgreSQL through Docker Compose, recreates the dedicated `azflow_test` database and applies the current Alembic migration chain before pytest starts. CI uses an equivalent PostgreSQL 16 service container.
 
 Test doubles remain useful at integration boundaries where the dependency is not the subject of the test. For example, the mock appointment source replaces an external hospital scheduling system, and event spies are used when a persistence/calling test does not need to exercise the WebSocket transport itself.
 
-Both groups pass completely in the final run: **111/111 API component tests** and **85/85 persistence integration tests**. Run in isolation, they cover **80.4% of the API/FastAPI layer** and **89.4% of the PostgreSQL persistence adapters**, respectively.
+Both groups pass completely in the final run: **121/121 API component tests** and **85/85 persistence integration tests**. Run in isolation, they cover **90.2% of the API/FastAPI layer** and **89.4% of the PostgreSQL persistence adapters**, respectively.
 
 ### System testing
 
@@ -96,7 +96,7 @@ The main system paths verify:
 
 `test_websocket_display_end_to_end.py` is particularly important because it verifies both halves of the display design: persisted state is used to rebuild the initial snapshot, while later calls are delivered live through the in-process WebSocket hub. Therefore a lost WebSocket connection does not become a loss of operational state.
 
-All **13 end-to-end tests pass**. Run by themselves, they exercise **81.3% of the runtime production package** (excluding migration scripts), which is expected to be lower than the combined-suite coverage because these tests intentionally concentrate on representative cross-layer workflows rather than every branch and error case. The complete automated run therefore finishes with **418 passed, 0 failed**. Ruff reported no linting issues, `ruff format --check` reported all 123 checked files formatted, and mypy reported **no issues in 119 source files**.
+All **13 end-to-end tests pass**. Run by themselves, they exercise **81.3% of the runtime production package** (excluding migration scripts), which is expected to be lower than the combined-suite coverage because these tests intentionally concentrate on representative cross-layer workflows rather than every branch and error case. The complete automated run therefore finishes with **428 passed, 0 failed**. Ruff reported no linting issues, `ruff format --check` reported all 124 checked files formatted, and mypy reported **no issues in 120 source files**.
 
 ## Acceptance tests (manual)
 
