@@ -10,6 +10,10 @@ The requirements describe a workflow that is simple from the user point of view,
 
 The resulting design separates the core workflow from its external interfaces. The application coordinates check-in, queues, calls and state changes through domain concepts and application services, while adapters connect this logic to HTTP and WebSocket clients, the appointment source and persistent storage. This separation also makes it possible to replace the mock integrations used by the project without moving those details into the domain model.
 
+![High-level view of the AZFlow hexagonal architecture]({{ site.baseurl }}/pictures/hex_arch.png)
+
+*Figure — High-level view of the hexagonal architecture adopted by AZFlow.*
+
 Because these decisions involve different views of the same system, the Design chapter is divided into the following sections:
 
 - **Architecture** describes the architectural style, the main components and their responsibilities.
