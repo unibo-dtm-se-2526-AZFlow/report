@@ -30,7 +30,7 @@ npm install
 npx semantic-release
 ```
 
-which, on a real release, invokes the equivalent Poetry version/build/publish operations. No release branch is used. Tags use `v<major>.<minor>.<patch>`; at the time of writing, the latest completed release is **v2.0.0**.
+which, on a real release, invokes the equivalent Poetry version/build/publish operations. No release branch is used. Tags use `v<major>.<minor>.<patch>`. The **v3.0.x release series** introduces explicit appointment-source configuration through the breaking change `feat(config)!`, replacing the automatic mock setup of v2.0.1. Each release receives its own exact version tag.
 
 ## License
 

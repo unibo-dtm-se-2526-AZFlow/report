@@ -6,7 +6,7 @@ nav_order: 8
 
 # Deployment
 
-AZFlow is distributed as a server-side Python package. The current release is a demonstrator rather than a complete clinical production deployment because only the synthetic `DemoAppointmentSource` is implemented and production identity/authorization integration is absent.
+AZFlow is distributed as a server-side Python package. This section describes the **v3.0.x release series**, where `DemoAppointmentSource` must be configured explicitly. The preceding v2.0.1 release enabled `MockAppointmentSource` automatically. AZFlow remains a demonstrator rather than a complete clinical production deployment: real hospital integrations and production identity/authorization are absent.
 
 ## User installation
 
@@ -14,16 +14,16 @@ No local installation is required on user devices: clients access AZFlow through
 
 ## Server-side installation
 
-The released package requires Python `>=3.10,<4.0` and a reachable PostgreSQL database. PostgreSQL 16 is used in development and CI.
+The package requires Python `>=3.10,<4.0` and a reachable PostgreSQL database. PostgreSQL 16 is used in development and CI. The command below selects the latest available **3.0.x** patch release from TestPyPI once that series has been published.
 
 ```bash
 pip install \
   --index-url https://test.pypi.org/simple/ \
   --extra-index-url https://pypi.org/simple/ \
-  AZFlow
+  'AZFlow==3.0.*'
 ```
 
-Main environment settings are:
+Main environment settings for **v3.0.x** are listed below. The API and PostgreSQL variables also apply to v2.0.1, but numbered appointment-source selection does not:
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
@@ -37,7 +37,7 @@ Main environment settings are:
 | `POSTGRES_PASSWORD` | Database password | required |
 | `POSTGRES_DB` | Database name | required |
 
-Database creation and credentials remain infrastructure responsibilities. When no appointment source is selected, check-in returns HTTP 503; with an unavailable PostgreSQL server, database-backed requests return HTTP 503. The health endpoint only reports API process availability. The demo adapter is included in the package but does not automatically seed PostgreSQL. Apply packaged migrations explicitly before first start and after schema-changing upgrades:
+Database creation and credentials remain infrastructure responsibilities. In **v3.0.x**, check-in returns HTTP 503 when no appointment source is selected, and database-backed HTTP requests return HTTP 503 when PostgreSQL is unavailable. These error-handling changes were not present in v2.0.1. The health endpoint reports API process availability rather than database readiness. Selecting `DemoAppointmentSource` does not automatically seed PostgreSQL. Apply packaged migrations explicitly before first start and after schema-changing upgrades:
 
 ```bash
 python -m AZFlow.migrations upgrade
@@ -46,7 +46,7 @@ python -m AZFlow
 
 Migrations are not run automatically at startup, avoiding concurrent schema changes when several application processes exist.
 
-TLS termination, reverse proxying, supervision, high availability and replacement of the mock source depend on the target environment. A `Dockerfile` can build AZFlow from source, but no container image is currently published; the documented release path is the Python package.
+TLS termination, reverse proxying, supervision, high availability and integration with real appointment sources depend on the target environment. A `Dockerfile` can build AZFlow from source, but no container image is currently published; the documented release path is the Python package.
 
 ## Packaged runtime topology
 
