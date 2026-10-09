@@ -24,7 +24,7 @@ The following UML use-case diagram summarizes the main interactions between AZFl
 
 ![AZFlow use-case diagram]({{ site.baseurl }}/pictures/requirements-use-cases.svg)
 
-<a href="https://www.plantuml.com/plantuml/uml/RLJBRW8n3BpdAopky05LjGBr8VNI1qYjr5iK34JD9jia2rHL_xrvRTY4vG8UpoIsns5fBDMsRmKHkBDW5MY-FrZOSetCSYK9eSmg3Q_KSfGsHIyTQkf-f73sSBQe9HL0kqvnQLj71QDwpN06rC3g0cy2EWW_ABTSxkTQgTPTQZf1Vu8Y9UuZDD3NDSq30uVuagdS2uJLvwDG9_Wbu3wzGKODmkpkWEmBk0pA43p9ah56gpaUSTo7YHUbpAWJKshVEPxWkyS-jkp3DnzLDL0XGEBPGXSd6ejnwBC39xW6XMiBjrVyJOUCxpWhDPlUT2WpsydraISNKgvksRZHugGWvKh1Qjloilg0rALBXY8VobozgN2FrnNuT75YXAhE3ixHqtXVF2UwutDfOoP4cPovVct87o5fgs4-R_92f6zOB9f9r-46Rc-vPABVOjEGgzKEXqsk2ncUJQ1S5gI0yofSeTdm8ZEOMe23SGKORQgE3NPKsZ1xKhx0UDTepAENbtDXh4jNZVz3-GS" target="_blank" rel="noopener noreferrer">Edit on PlantUML</a> · [source]({{ site.baseurl }}/pictures/plantuml/requirements-use-cases.puml)
+<a href="https://www.plantuml.com/plantuml/uml/RLJBRW8n3BpdAopky05LjGBr8VNI1qYjr5iK34JD9jia2rHL_xrvRTY4vG8UpoIsns5fBDMsRmKHkBDW5MY-FrZOSetCSYK9eSmg3Q_KSfGsHIyTQkf-f73sSBQe9HL0kqvnQLj71QDwpN06rC3g0cy2EWW_ABTSxkTQgTPTQZf1Vu8Y9UuZDD3NDSq30uVuagdS2uJLvwDG9_Wbu3wzGKODmkpkWEmBk0pA43p9ah56gpaUSTo7YHUbpAWJKshVEPxWkyS-jkp3DnzLDL0XGEBPGXSd6ejnwBC39xW6XMiBjrVyJOUCxpWhDPlUT2WpsydraISNKgvksRZHugGWvKh1Qjloilg0rALBXY8VobozgN2FrnNuT75YXAhE3ixHqtXVF2UwutDfOoP4cPovVct87o5fgs4-R_92f6zOB9f9r-46Rc-vPABVOjEGgzKEXqsk2ncUJQ1S5gI0yofSeTdm8ZEOMe23SGKORQgE3NPKsZ1xKhx0UDTepAENbtDXh4jNZVz3-GS0" target="_blank" rel="noopener noreferrer">Edit on PlantUML</a> · [source]({{ site.baseurl }}/pictures/plantuml/requirements-use-cases.puml)
 
 ## Glossary
 
@@ -164,16 +164,17 @@ AZFlow shall provide the Operator with the information and actions required to m
 - Available actions depend on the current ServiceAccess state.
 - Appointment timing after a call is based on the persisted first-call time and is not reset by a later recall.
 
-### FR11 - External appointment-source boundary
+### FR11 - Multiple external appointment sources
 
-AZFlow shall obtain appointment information from a configured external source while keeping external scheduling information distinct from its operational state.
+AZFlow shall obtain appointment information from one or more configured external sources while keeping source-specific scheduling data separate from its operational state.
 
 **Acceptance criteria**
 
-- Check-in can query a configured appointment source using the Patient Identifier.
-- External scheduling information remains distinct from AZFlow operational state.
-- Source-specific patient and appointment references do not become AZFlow patient identities.
-- Replacing the appointment source does not change the expected check-in behaviour.
+- Check-in can query more than one configured appointment source for the same Patient Identifier and operational day.
+- Appointments returned by different sources can contribute to the same check-in operation.
+- Source-specific patient, agenda and appointment references remain associated with their originating source.
+- The operational workflow does not depend on which source provided an Appointment.
+- Adding or replacing an appointment-source implementation does not change the expected check-in behaviour.
 
 ## Non-functional requirements
 
@@ -215,21 +216,3 @@ The main domain and application behaviours shall be automatically verifiable ind
 - Automated tests cover domain/application behaviour and API behaviour.
 - Persistence integration tests run against a disposable database.
 - Static checks and automated tests must pass before a release is produced.
-
-## Implementation constraints
-
-The project started from the Python project template supplied for the Software Engineering course. Therefore, the template development and release infrastructure is retained as a project constraint rather than introduced as a domain requirement.
-
-### IC1 - Course project toolchain
-
-The project shall preserve the course-provided automated quality and release workflow unless a project requirement makes a change necessary.
-
-**Justification:** this keeps the project compatible with the course delivery environment and its expected automated checks.
-
-**Acceptance criteria**
-
-- The repository remains buildable and testable through the provided Python/Poetry project structure.
-- Automated formatting, linting, static type checking, testing and coverage checks remain available.
-- The GitHub Actions and semantic-release based delivery workflow remains operational.
-
-Technology choices made to implement the requirements, including FastAPI, PostgreSQL, WebSockets and Alembic, are discussed in the Design and Development chapters rather than treated as requirements.

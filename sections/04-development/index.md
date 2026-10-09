@@ -6,93 +6,85 @@ nav_order: 5
 
 # Development
 
-The implementation follows the boundaries introduced in the Design chapter, but this section focuses on the concrete development choices: how the Git repository was organized, how components communicate at runtime and which technologies were selected to implement the current vertical slice.
+AZFlow was implemented in vertical increments following the boundaries established in Design. This section describes the development workflow and representative coding decisions; setup commands, test results and release procedures are documented in their respective chapters.
 
-## DVCS
+## DVCS and incremental development
 
-Git is used as the distributed version control system and GitHub hosts the public project repository. Development follows an integration-branch workflow where `master` represents the releasable line and `development` collects completed work before it is promoted to `master`.
-
-Short-lived branches isolate changes with a name that also explains their purpose:
+Git and GitHub manage the source history. `development` integrates completed changes, while `master` is the releasable branch. Topic branches isolate each increment:
 
 | Branch pattern | Purpose | Example |
 | --- | --- | --- |
-| `feature/<name>` | Introduce a new capability or a coherent extension. | `feature/operator-workflow` |
-| `fix/<name>` | Correct behaviour already present in development. | `fix/waiting-room-appointment-time` |
-| `hotfix/<name>` | Correct an urgent integration, deployment or release problem. | `hotfix/testpypi-publishing` |
-| `refactor/<name>` | Change implementation structure without introducing a new user feature. | `refactor/totem-id-check-in` |
+| `feature/<name>` | New functionality | `feature/operator-workflow` |
+| `fix/<name>` | Behaviour correction | `fix/waiting-room-appointment-time` |
+| `hotfix/<name>` | Urgent integration or release correction | `hotfix/testpypi-publishing` |
+| `refactor/<name>` | Structural change | `refactor/totem-id-check-in` |
 
-A topic branch is normally merged into `development` when its work is complete. `development` is then merged into `master` when the collected changes form a releasable version. The release automation and version tags are described separately in the Release and CI/CD chapters.
+Work advanced from check-in and Queue reading to calling, state management, displays, operator functions, demo clients and database/package lifecycle. Requirements and design were refined alongside implementation and verification. Commit messages follow a Conventional-Commits-like format, for example `fix(display): respect queue policy for appointment time`; `!` identifies a breaking change.
 
-Commit messages follow a Conventional-Commits-like structure, using a type and usually a scope, for example `fix(display): respect queue policy for appointment time` or `docs(readme): expand development and demo setup`. The main types used by the project are `feat`, `fix`, `refactor`, `test`, `docs` and `chore`; a `!` marks a breaking change when needed. Merge commits use a short `merge:` description so that the history keeps the integration points visible.
+As a single-developer project, work was tracked through specifications, task lists and topic branches rather than mandatory pull requests or GitHub Issues. Automated checks were run before integration into `development` and promotion to `master`.
 
-The project was developed by one developer, so a mandatory pull-request and approval workflow was not introduced. GitHub Issues were not used either: work was tracked through incremental specifications, task lists and topic branches. Topic branches and automated checks provide isolation and verification, while merges are performed only after the related change has been reviewed locally. This avoids adding review ceremony without an independent reviewer in the context of the project.
+## Technologies and implementation choices
 
-## Incremental development
-
-Development proceeded through small vertical increments rather than implementing the complete system in a single pass. Each increment refined a limited part of the workflow, updated its requirements and design where needed, and was then implemented and verified on a dedicated topic branch before integration into `development`.
-
-The main increments followed the evolution of the demonstrator: project foundation, patient check-in, queue reading, patient calling, suspend/restore/admission, live call notifications and displays, operator workflow, demo clients, and finally database lifecycle and packaging improvements. This kept each change reviewable and made architectural decisions evolve together with the implemented behaviour instead of being fixed completely upfront.
-
-## Implementation details
-
-The main implementation choices are summarized below.
-
-| Concern | Choice | Reason |
+| Concern | Implementation | Motivation |
 | --- | --- | --- |
-| Client commands and queries | HTTP | Fits short request/response operations such as check-in, queue views and state changes. |
-| Live display updates | WebSocket | Keeps a connection open and lets AZFlow push new calls and state changes without continuous polling. |
-| In-transit representation | JSON | Native fit for the browser clients and FastAPI/Pydantic models, and readable during development. |
-| Persistent data access | SQL through Psycopg | Gives explicit control over joins, conditional updates, transactions and PostgreSQL behaviour. |
-| Authentication | Not implemented in the current slice | Identity and login management are outside the implemented workflow. |
-| Authorization | Not implemented in the current slice | The demonstrator assumes trusted clients and does not enforce roles at API level. |
+| Application code | Python, FastAPI, Uvicorn | Typed domain code and HTTP/WebSocket endpoints |
+| API contracts and settings | Pydantic, pydantic-settings, JSON | Validation and a common client/server representation |
+| Requests and live updates | HTTP commands/queries, WebSocket events | Immediate workflow results and push notifications |
+| Persistence | PostgreSQL 16, Psycopg 3, explicit SQL | Transactional state changes and controlled queries |
+| Schema evolution | Alembic | Explicit, versioned database migrations |
+| Development tooling | Poetry, Poe, Docker Compose | Reproducible tasks and local services |
+| Demo interfaces | HTML, CSS, JavaScript modules, Nginx | Lightweight browser clients without a frontend framework |
 
-### Communication protocols and data representation
+The API is versioned under `/api/v1`. WebSocket messages complement persisted state rather than replacing it: display clients first receive the current snapshot and then subsequent events. Authentication and authorization were outside the current slice; their implications are discussed in Future Work.
 
-The HTTP API is versioned under `/api/v1`. FastAPI endpoints receive and return JSON structures described by Pydantic models, which also validate basic request constraints before the application service is called. HTTP is used for operations where the caller expects an immediate result, including check-in, Queue views, patient calling and state-management commands.
+## Object-oriented implementation
 
-WebSockets are used only for the live display channel. Room and waiting-room displays first rebuild their visible state from persisted data and then keep a WebSocket connection for subsequent updates. Messages are also JSON and contain the public operational information required by the display, while timestamps are serialized in ISO 8601 form. This keeps the real-time channel simple and consistent with the HTTP representation.
+Domain concepts use Python dataclasses and enums. In particular, `ServiceAccess` is a frozen dataclass: its state transitions enforce domain rules and return a new value instead of mutating the current instance. For example:
 
-The project does not introduce a message broker or another asynchronous protocol because the current deployment contains a single AZFlow process and live events only need to reach connected display clients. A broker could become useful with multiple application instances, but it is not required by the current slice.
+```python
+def called(self) -> "ServiceAccess":
+    if self.state is not ServiceAccessState.WAITING:
+        raise ServiceAccessNotWaitingError(self.id)
+    return replace(self, state=ServiceAccessState.CALLED)
+```
 
-### Database access
+`Enum` defines the allowed operational states, while type hints describe method contracts for static checking. The returned instance expresses the valid transition; writing the new state to PostgreSQL remains the repository's responsibility.
 
-Persistence adapters query PostgreSQL using Psycopg and explicit SQL rather than an ORM. For the current slice this was also more immediate to implement than introducing and configuring an ORM, while still giving explicit control where database semantics are important, especially conditional state transitions, `ON CONFLICT` operations, recursive topology queries and transactional creation of public call codes. An ORM remains a possible future evolution if the persistence layer grows in size and complexity.
+## Ports and adapters implementation
 
-SQL remains inside the infrastructure adapters. Domain objects and application services do not know table names or Psycopg APIs; they depend on repositories and read-model ports. This keeps database-specific code localized while allowing the implementation to use PostgreSQL features directly where they simplify consistency and concurrency handling.
+Application services depend on typed ports rather than FastAPI or Psycopg. `AppointmentSource` is defined through structural typing with `Protocol`:
 
-### Authentication and authorization
+```python
+class AppointmentSource(Protocol):
+    def find_for_day(
+        self,
+        patient_identifier: PatientIdentifier,
+        operational_day: date,
+    ) -> List[ExternalAppointmentData]:
+        ...
+```
 
-The current vertical slice has no authentication mechanism and does not implement RBAC or another authorization model. `Patient`, `Operator`, Totem and display roles describe use cases, but they are not authenticated identities in the implemented API. The demonstration environment therefore assumes that its clients are already inside a trusted context.
+`CheckInService` accepts a `Sequence[AppointmentSource]` and queries the supplied sources in order. Each external appointment is mapped to a local Agenda, and only those linked to an active Queue are considered. The composition root reads numbered `AZFLOW_APPOINTMENT_SOURCE_<n>` settings in numeric order, including sparse indices. Only `demo` is currently implemented; additional adapters can be registered without changing the service. With no source selected, check-in returns HTTP 503. Other ports similarly isolate persistence and event delivery.
 
-This is a deliberate scope boundary rather than a production security model. A real hospital deployment would need to identify operator and device clients and restrict operations according to their role. A planned evolution is to integrate Keycloak for user and role management and to connect authentication with the identity systems already available in the target organization; this integration is intentionally outside the current implementation.
+## Queue processing and consistency
 
-## Technological details
+The application-level ordering functions select `ServiceAccess` candidates belonging to the Agendas served by a Queue, remove duplicate access identifiers and apply its policy. `BY_APPOINTMENT` sorts by scheduled time, while `BY_ARRIVAL` uses check-in time; identifiers provide deterministic tie-breaking. Operator lists additionally distinguish active calls, queued/suspended accesses and admitted entries.
 
-The project started from the Python course template, so Python and its packaging workflow were retained while the application technologies were selected around the requirements of the vertical slice.
+Queue membership never duplicates the underlying access or its state. During `call_next`, the service reads and orders candidates, then asks the repository to perform a conditional transition:
 
-| Technology | Role in AZFlow |
-| --- | --- |
-| Python | Main implementation language for domain, application, API and infrastructure code. |
-| FastAPI | HTTP and WebSocket API framework; it provides request validation and OpenAPI documentation with little additional infrastructure. |
-| Uvicorn | ASGI server used to run the FastAPI application. |
-| Pydantic / pydantic-settings | API models, validation and environment-based configuration. |
-| PostgreSQL 16 | Relational persistent store, well suited to transactional operational data, constraints and structured queries. |
-| Psycopg 3 | PostgreSQL driver used by repository and read-model adapters; it keeps SQL explicit and avoids the initial complexity of an ORM. |
-| Alembic | Versioned database-schema migrations, allowing schema changes to evolve safely with application releases. |
-| Poetry | Dependency management, packaging and build configuration inherited from the course template and retained for a reproducible workflow. |
-| Poe the Poet | Named commands that make tests, checks, migrations and local startup repeatable without remembering long command sequences. |
-| Docker / Docker Compose | Reproducible PostgreSQL and development/demo services. |
-| HTML, CSS and JavaScript | Lightweight browser demonstrators for Operator, Totem and displays. |
-| Nginx | Serves the static demo clients and proxies their development API/WebSocket traffic. |
+```sql
+UPDATE service_access
+SET state = 'CALLED', room_id = %s
+WHERE id = %s AND state = %s
+RETURNING id, daily_presence_id, agenda_id, appointment_id
+```
 
-The Python package is organized according to the architectural boundaries rather than by framework feature:
+The repository records the corresponding transition in the same transaction. If another operator has already changed the selected access, the update returns no row and `call_next` reloads the candidates. An event is published only after a successful call, avoiding duplicate notifications for failed attempts.
 
-| Package | Responsibility |
-| --- | --- |
-| `AZFlow/domain` | Domain concepts and local business rules. |
-| `AZFlow/application` | Use-case services and application ports. |
-| `AZFlow/api` | FastAPI endpoints, transport schemas and dependency composition. |
-| `AZFlow/infrastructure` | PostgreSQL, appointment-source and WebSocket adapters. |
-| `AZFlow/migrations` | Alembic migration history for the PostgreSQL schema. |
+## Demo clients and package separation
 
-The main runtime dependencies are intentionally limited to FastAPI, Uvicorn, Psycopg, Pydantic Settings and Alembic. Development dependencies add Pytest, Coverage, Ruff, Mypy and HTTPX for verification and tooling. PostgreSQL is the only external runtime service required by the current implementation; the hospital appointment system is represented by `MockAppointmentSource`, while GitHub Actions and TestPyPI belong to the delivery process described later in the report.
+The repository provides four static browser clients: Totem, Operator, Waiting Room display and Room display. They use native JavaScript modules, with `dev/demo_clients/shared/azflow-api.js` centralizing HTTP requests, WebSocket creation and common utilities. URL parameters identify the simulated device or select the operator's initial Room and Queue.
+
+The display clients handle snapshots, live events and reconnection so opening or refreshing a page reconstructs the current state. Nginx serves the clients and proxies requests in the development environment; `dev/seed_data.sql` supplies repeatable synthetic scenarios.
+
+The distributable Python package contains the `AZFlow/` application, migrations and optional demo adapter, but not `dev/`, `tests/` or local launch scripts. The demo adapter includes synthetic appointments; selecting it does not load the SQL demo seed or create the database schema. Packaging and publication are covered in Release, environment setup in Developer Guide and client operation in User Guide.

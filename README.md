@@ -1,4 +1,4 @@
-# AZFlow — Software Engineering Report
+# AZFlow - Software Engineering Report
 
 This repository contains the final project report for **AZFlow**, a healthcare queue management system developed for the Software Engineering course of the Digital Transformation Management programme at the University of Bologna.
 

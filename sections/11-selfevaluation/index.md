@@ -10,30 +10,26 @@ nav_order: 12
 
 ### Role
 
-AZFlow was developed as an individual project, so I covered the complete development cycle rather than a single technical role. I defined and refined the project scope, modelled the domain and use cases, designed the architecture, implemented the application and persistence layers, created the browser demonstrators, prepared the automated tests and CI/CD workflow, and wrote the project documentation.
+AZFlow was an individual project, so I covered scope definition, domain modelling, architecture, implementation, persistence, demo clients, tests, CI/CD and documentation. Working alone kept decisions fast and consistent but removed independent code review; I tried to compensate with incremental development, topic branches and automated verification.
 
-Working alone made decisions fast and kept the implementation consistent, but it also meant that there was no independent developer performing code reviews or challenging design choices during development. I tried to compensate for this by working incrementally, keeping changes isolated in topic branches, adding automated verification and repeatedly reviewing earlier choices as new parts of the system were introduced.
-
-As already disclosed in the report introduction, I used ChatGPT throughout the project as an AI-assisted development tool. It supported activities such as refining requirements and design alternatives, drafting and reviewing code, generating and extending test cases, checking edge cases, and improving documentation. This significantly increased the amount of verification that I could realistically perform as a single developer, including the final automated suite of 428 tests. I remained responsible for deciding what to implement, reviewing generated suggestions, executing the software and tests, investigating failures and accepting or rejecting the resulting changes.
+As disclosed in the introduction, I used ChatGPT as an AI-assisted development tool for requirements/design discussion, code drafting and review, test generation, edge-case analysis and documentation. It helped increase the amount of verification possible for one developer, including the final 428-test suite. I remained responsible for the decisions, review of suggestions, execution of the software and investigation of failures.
 
 ### Strengths
 
-One aspect I consider positive is that the initial idea survived the analysis and development phases without losing its main foundations. The implementation changed in several details, and some concepts were refined or removed, but the core problem I wanted to address remained the same. I interpret this as a sign that I had understood the problem reasonably well before starting the implementation. At the same time, the current project only covers part of the original idea: several functions I had imagined at the beginning are still missing and would require additional development.
+The initial idea changed during development but retained its main model: external appointments remain separate from AZFlow operational state, and the implementation covers a complete patient/operator/display flow. The current slice implements only part of the original vision, but it validates the core concept end to end.
 
-I am also satisfied with the separation between application logic and technical details. The hexagonal structure helped me keep the domain and application code independent from FastAPI, PostgreSQL and WebSocket-specific code. For a project of this size this may be more structure than strictly necessary, but it made the main responsibilities easier to understand and change during development.
+The separation between application logic and technical adapters also worked well. It may be more structure than strictly necessary for a project of this size, but it kept FastAPI, PostgreSQL and WebSocket details out of the core workflow and supports the expected future integrations.
 
-Another positive result is the level of automated verification. The project includes tests for domain behaviour, application services, API composition and PostgreSQL persistence, while the CI pipeline checks formatting, static typing and multiple Python versions and operating systems. This gave me confidence when refactoring parts of the application and reduced the risk of breaking behaviour that had already been implemented.
-
-Finally, the project remained focused on a complete end-to-end path rather than only on isolated backend functions. The browser clients are deliberately simple, but they make it possible to demonstrate check-in, operator actions and public displays together in a way that is closer to the original use case.
+Automated verification is another strong point. Tests cover domain, application, API composition, PostgreSQL persistence and end-to-end behaviour, while CI adds formatting, static typing and compatibility checks.
 
 ### Weaknesses and lessons learned
 
-The main weakness is that the implemented slice is still far from a deployable hospital product. Authentication and authorization are absent, the appointment source is mocked, configuration is mostly predefined, and administration and monitoring functions are outside the scope. These are acceptable project boundaries, but they are also important limitations of the current software.
+The main limitation is that the slice is far from a production hospital product: authentication/authorization, real appointment integrations, administration and monitoring are absent.
 
-Some design decisions also stabilised later than I would have preferred. During development I removed concepts that had become unnecessary, refined how Rooms and devices were identified, changed the database lifecycle and introduced explicit migrations only after the first implementation phases. These refactorings improved the final design, but they show that some infrastructure and deployment concerns should have been addressed earlier.
+Some design decisions also stabilised late. Room/device identification, database lifecycle and explicit migrations were refined after the first implementation phases. The final design improved, but addressing deployment and persistence strategy earlier would have reduced rework.
 
-I also spent a significant amount of effort on development tooling, demo infrastructure, packaging, release automation and documentation. I consider this useful because these aspects are part of software engineering, but with a stricter time budget I would define the release and deployment strategy earlier and reserve more time for additional application functionality such as real identity management or external-system integration.
+I also spent substantial time on tooling, demo infrastructure, packaging, release automation and documentation. These are useful software-engineering activities, but with a stricter schedule I would define them earlier and reserve more time for application functionality.
 
-The individual nature of the project is another limitation of the experience itself. Git branches and CI reproduced part of a collaborative workflow, but they cannot replace discussion, pull-request review, task coordination and conflicting design opinions inside a real team. For a future project I would therefore keep the incremental technical approach used here while introducing peer review much earlier.
+Finally, branches and CI cannot reproduce peer review or team coordination. In a future project I would keep the incremental approach but introduce independent review much earlier.
 
-Overall, the project changed considerably from the first implementation to the final release, but the changes were mostly refinements rather than rewrites of the core idea. I consider this the most useful lesson from the work: defining a small vertical slice and allowing its design to evolve through tested increments produced a stronger result than trying to specify the complete system in advance.
+Overall, the most useful lesson was to keep the scope as a vertical slice and let the design evolve through tested increments rather than trying to define the complete system in advance.
