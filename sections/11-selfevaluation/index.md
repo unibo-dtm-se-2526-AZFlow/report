@@ -12,7 +12,7 @@ nav_order: 12
 
 AZFlow was an individual project, so I covered scope definition, domain modelling, architecture, implementation, persistence, demo clients, tests, CI/CD and documentation. Working alone kept decisions fast and consistent but removed independent code review; I tried to compensate with incremental development, topic branches and automated verification.
 
-As disclosed in the introduction, I used ChatGPT as an AI-assisted development tool for requirements/design discussion, code drafting and review, test generation, edge-case analysis and documentation. It helped increase the amount of verification possible for one developer, including the final 428-test suite. I remained responsible for the decisions, review of suggestions, execution of the software and investigation of failures.
+As disclosed in the introduction, I used ChatGPT as an AI-assisted development tool for requirements/design discussion, code drafting and review, test generation, edge-case analysis and documentation. It helped increase the amount of verification possible for one developer, including the final 439-test suite. I remained responsible for the decisions, review of suggestions, execution of the software and investigation of failures.
 
 ### Strengths
 

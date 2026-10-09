@@ -176,6 +176,8 @@ AZFlow shall obtain appointment information from one or more configured external
 - The operational workflow does not depend on which source provided an Appointment.
 - Adding or replacing an appointment-source implementation does not change the expected check-in behaviour.
 
+**Implementation status:** `CheckInService` already accepts and queries multiple `AppointmentSource` instances, and numbered environment settings support sparse source indices. However, the composition root currently registers only `demo` and rejects duplicate source identifiers. Integration with multiple distinct configured sources is therefore not yet demonstrated; this requirement remains partially implemented.
+
 ## Non-functional requirements
 
 ### NFR1 - Privacy

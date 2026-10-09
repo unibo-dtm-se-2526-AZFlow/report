@@ -8,7 +8,7 @@ nav_order: 4
 
 The requirements describe a workflow that is simple from the user point of view, but the internal model has to separate information that belongs to existing hospital systems from the operational state managed by AZFlow. The design therefore started from two main problems: representing a patient who can have multiple services during the same day, and keeping the application independent from the concrete systems used to obtain appointments, store operational data and present the workflow to different clients.
 
-The resulting design separates the core workflow from its external interfaces. The application coordinates check-in, queues, calls and state changes through domain concepts and application services, while adapters connect this logic to HTTP and WebSocket clients, the appointment source and persistent storage. This separation also makes it possible to replace the mock integrations used by the project without moving those details into the domain model.
+The resulting design separates the core workflow from its external interfaces. The application coordinates check-in, queues, calls and state changes through domain concepts and application services, while adapters connect this logic to HTTP and WebSocket clients, the appointment source and persistent storage. This separation also makes it possible to add real appointment-source adapters alongside the demo implementation without moving those details into the domain model.
 
 ![High-level view of the AZFlow hexagonal architecture]({{ site.baseurl }}/pictures/hex_arch.png)
 

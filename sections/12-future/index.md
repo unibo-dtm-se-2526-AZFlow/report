@@ -10,7 +10,7 @@ After the final validation cycle I am not aware of a reproducible defect that pr
 
 ## Current limitations
 
-External appointment sources are only partially modular. `AppointmentSource` is already an application port and `CheckInService` accepts multiple sources selected through numbered configuration entries. Currently, only `DemoAppointmentSource` is implemented; real integrations still require adapter implementations and registration in the composition root.
+External appointment sources are only partially modular. `AppointmentSource` is already an application port and `CheckInService` can query several sources. Numbered configuration entries also support sparse indices, but the composition root currently registers only `DemoAppointmentSource` and rejects duplicate identifiers. Multiple distinct sources therefore cannot yet be configured in a working deployment; real integrations require additional adapter implementations and registration.
 
 Authentication and authorization are absent. The API assumes trusted Operator, Totem and display clients and does not enforce roles. Configuration also has no administration UI: Agendas, Queues, Rooms, Totems, monitors, topology and source mappings are prepared through database data rather than managed by non-technical users.
 
@@ -20,7 +20,7 @@ Finally, live events use an in-memory WebSocket hub and therefore assume one AZF
 
 ## Future developments
 
-The first step would be modular appointment-source adapters. A registry, factory or plugin mechanism could load one or more `AppointmentSource` implementations from configuration without changing domain/application code. The built-in mock could remain a development adapter while real HIS/RIS connectors live in separate modules or packages. YAML is one possible configuration format, but the concrete mechanism is not yet fixed.
+The next step would be to implement additional appointment-source adapters and define how they are configured and instantiated. `DemoAppointmentSource` should remain available as an optional adapter for demonstrations and testing alongside real hospital integrations. The detailed loading and connection-configuration mechanism is not yet defined.
 
 Identity and access control are another priority. Operators should authenticate through the organization identity system, while Totems and displays should be recognized as managed devices. Keycloak is one possible integration direction.
 
@@ -40,4 +40,4 @@ The following diagram illustrates a possible production-oriented evolution, with
 
 <a href="https://www.plantuml.com/plantuml/uml/ZLRRRjiu47tNLmpoi8qVx1IBNInG145LMOc5jMN1KXjidI2W9TecB95QaafgTFllEwHaNPmKw8DZUUOSpeLpHlceD96wAd977HWlYIG5g3t9n0lZEzYIND6UfoJfWUneh8yv1KbJJVWkxmDIKPI2Kwvh29xxUy_BHKOLBU7FzpsZ9FnWZ7-yTnpDDBBShxUvU84n94Jkg0RlT2YuCjqpZN4hIHtd7Op7O_3cWHycCLowypaaosXah4wJALnuEKEcke3l3a1hdGbLCarocBiX3200QpSh68ShY3NPRX_uFTrW2bo9d3u2KP1Q-1Cng9hWxMbw62FdRoRKGVLH1sEfKLEcofmSrGE_l2TCOtzNGXJm6qo5aAC-AQkHIFk1dtxU_ZTD9SUyptEEY3O6M8WDCoqio_w1XRNQytwS-ePTdY_l8VudJlm5k54q3zpGyuVTQwu2ZyiPuIc5ovcBiIk5QOmkJ0JIkhux681nz6n9QdgS956CRRoFumSUy9saIbbASFiKX7ShFuw7X5Dn3pmMbKnf9AIsX18VdZ2GG721zGnfRgNtPr2qc6JMSq4o-4Hoav_4JaTIV3i-yEjhh68CNuBeviQsATyOT5Ei9oG5d-yOfotKJJLxfbVrLqDA4MTe_hDfV5HjSgRsLBQS5SLxF3MhuPJLHbKss9HeiY6g2n59LX1vlCAfuzdcs12oZTE__oYlCA_kscT136v6IenWuQH-VjepLGDMFm784w1LWcdZcr3RpS7ep9Pn52Jk788myLSXFiJ-walW-V5mUjgp0zwCRKpbCqkfWaiKtgWkmnPn1Txd2E8ZzggmqTLHDLNO6guWShtu751NqTKmPMOf2NaqwesNgBJvr8tC3tSn7xMqfgAE5ozCX0LXETmHJL_8iSMgGdM5BzpGlVEdk7EMdwS_ATeEGjgKJ7LTOvgBAZC-jSU9m6TCxTPRO50t2bMj98jvAX7I1VIMOUXxIR0CwoXexcqiq08QOJdzhGIJoKrFPV01QYtQfZlzpVHBo6OTmVLaCiIYiYqIHvtauuGLT6GoR6-xMnihKPc5v_JeOrZdcqV7_C7IRc1jzFI8fw8tgStNs85rBPd7EfpZD33Bw5pKQ50Dd9brP2YpGKwrWi0iZ0wFhpi-VhrctdBRrRBkwUmH9bKv-U_c3NfFRB-0CaUVmMomT_1QH-PX9t7dutkfkQnXJjUs1us8J2DcyxzmscvdmUeihmufQ-Gqy9PcCf5ndbo7hNz_W4PVos3g3RhVICT0uaLY8FPQsvkWPcEY64AXsPQbjXAmwtShPFCMSzeBDaTsycYdr9wmelzML6cdvpT3FNZp8UDrjCjJ9ZYq7odFp3z1_mC0" target="_blank" rel="noopener noreferrer">Edit on PlantUML</a> · [source]({{ site.baseurl }}/pictures/plantuml/target-architecture.puml)
 
-The current release remains a tested demonstrator of the core workflow, not a complete clinical queue-management product.
+The implemented slice remains a tested demonstrator of the core workflow, not a complete clinical queue-management product.

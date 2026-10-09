@@ -45,7 +45,7 @@ The coverage figures reflect the complete suite and are not additive.
 | FR6–FR7 State management and transition history | `test_state_management.py`, `test_suspend_restore_admission_regression.py`, `test_postgres_state_transition_repository.py`, `test_state_management_end_to_end.py` | S11–S17, E09 |
 | FR8–FR9 Display scope and public call displays | `test_postgres_display_scope.py`, `test_postgres_display_read_model.py`, `test_websocket_call_hub.py`, `test_websocket_display_end_to_end.py` | S19–S25, E11 |
 | FR10 Operator operational view | `test_operator_queue_list.py`, `test_operator_queue_list_api.py`, `test_operator_discovery_api.py` | S02, S09–S18 |
-| FR11 External appointment-source boundary | `test_appointment_source.py`, `test_mock_appointment_source.py`, check-in service tests | S04, S07 |
+| FR11 External appointment-source boundary | `test_appointment_source.py`, `test_demo_appointment_source.py`, check-in service tests | S04, S07 |
 | NFR1 Privacy | `test_display_privacy.py`, `test_websocket_privacy_and_independence.py`, end-to-end assertions | S26 |
 | NFR2 Consistency under concurrency | PostgreSQL concurrency cases for check-in, calling and state transitions | - |
 | NFR3 Recoverable display state | display read-model tests and `test_websocket_display_end_to_end.py` | S01, S25 |
