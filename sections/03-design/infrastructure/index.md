@@ -6,54 +6,29 @@ nav_order: 4
 
 # Infrastructure
 
-The current project is a deployable vertical slice rather than the definition of a production hospital topology. Its infrastructure is therefore deliberately small: one AZFlow application process, one PostgreSQL database and browser-based clients. The appointment integration is represented by an in-memory mock adapter, while the interface used by the application is designed so that a real external source can replace it.
-
-The runtime elements of the demonstrator are intentionally limited:
+The implemented slice runs one AZFlow application process against PostgreSQL. Browser clients and the optional in-memory `DemoAppointmentSource` complete the demonstrator; the required runtime remains independent of the demo services.
 
 | Component | Current placement | Role | Required by AZFlow |
 | --- | --- | --- | --- |
-| AZFlow server | Host Python process in the development launcher; also buildable as a Docker image | Runs FastAPI, application services, domain code and adapters | Yes |
-| PostgreSQL 16 | Docker Compose container | Stores configuration, operational state and transition history | Yes |
-| `demo-web` | Nginx container in the `dev` profile | Serves browser demonstrators and proxies API/WebSocket traffic | Development/demo only |
-| Adminer | Docker Compose container in the `dev` profile | Provides a database inspection interface | Development only |
-| Browser clients | Web browser | Operator, Totem, Waiting Room and Room interfaces | Client side |
-| `MockAppointmentSource` | Inside the AZFlow process | Simulates the external scheduling integration | Current slice only |
+| AZFlow server | Host Python process (`poe dev`) or Compose `azflow` service | Runs FastAPI, application services, domain code and adapters. | Yes |
+| PostgreSQL 16 | Compose container in the demo; external DB for the package | Stores configuration and operational data. | Yes |
+| `demo-web` | Nginx container in the `dev` profile | Serves demo clients and proxies HTTP/WebSocket traffic. | Demo only |
+| Adminer | Compose container in the `dev` profile | Database inspection. | Development only |
+| Browser clients | Web browser | Operator, Totem, Waiting Room and Room interfaces. | Client-side |
+| `DemoAppointmentSource` | AZFlow process | Provides synthetic appointments when selected. | Optional |
 
+## Runtime and container topology
 
-## Runtime components
+AZFlow exposes REST and WebSocket endpoints from one FastAPI/Uvicorn process, with PostgreSQL running separately. For local development, `poe dev` starts PostgreSQL, Adminer and Nginx through Docker Compose, then runs AZFlow on the host. Compose also defines an `azflow` container for image-based execution. PostgreSQL data is stored in the named `pgdata` volume so it survives container recreation.
 
-The AZFlow server runs the FastAPI application and exposes both REST and WebSocket endpoints. The same process contains the application services, domain code and infrastructure adapters; the architectural separation described in the previous sections is a separation of responsibilities and dependencies, not a set of distributed microservices.
+![AZFlow infrastructure]({{ site.baseurl }}/pictures/infrastructure.svg)
 
-PostgreSQL runs as a separate service and stores the operational and configuration data. AZFlow opens a database connection for each HTTP request that requires persistence. WebSocket-related read operations use short-lived connections created by the display read-model factory, so blocking PostgreSQL work is not executed directly on the asynchronous event loop.
+*Figure - Infrastructure topology of the local development and demonstration environment.*
 
-The Operator UI, Totem, Waiting Room Display and Room Display are browser clients. In the demonstrator they are static development clients served through an Nginx container, but they communicate with AZFlow only through the exposed HTTP and WebSocket interfaces and are not part of the server process.
+<a href="https://www.plantuml.com/plantuml/uml/VPJVRzCm4CVV_LUS-W3RGzO1Oa9zc5RIebPqRKSg9l53a-TSKok97TdkjiBsltEEtP42uis--zpNNzyvkR2E6xUjAsPBgHfkU0rsmtDzBrK1QrvPx6GQBafUOEPs5O91uRWggYuWTDreXSe5X7HVTx9AvsYnWJTlEq73LTa6Jnbpqb7LyCk7Ijz30bErDjmwinLkQv2nbv0a2QIpwNY-oloQHKFGIoj9fzeU_6G0NnSD6kwqWLGhgoly3jo2Q94RdjTIUIZTe2WJgU2ZrBQqNQRq4S-Cf6qglZj8vY76dlQ6HkFFuzbYUKckOBB8LgqpVrVeZV0E9jgwdg_Vq8ByaIvTg_PPBKhq9gbf5bj6X7Lx3O0WCY-aUe2ZmRlJuvPHVj_93_sDICSJUuQ7M4lbtF5RJgAz9Jae36PNCtXrrd9DY5W2dxopvm6IR1X3gasmnd-iQK-CL0xDcWj_TDDesjP-udfh14PHusvikp-K766j_ohvfewcAhcabDa5ypNrvNTxqyLyFavNqyKyp9p2STgGd4DipcIrMi8BkCRRp3VL7RFkk26X1ws8Rbi70_0uwmxxlqIS-3yPwCDrbdbJmSadl4D3lLuQ_R0ZHt4uBDJi5K8l3oKYOMInSHw9Knr0Foxx_fHbjIKEXaPifCFmOKIrM7hGVjzAEAbmxKuUpmyof3LwxpyGHIgIlfDdcUXn_pJ80JqOjlVpPvfTeChz3-GN" target="_blank" rel="noopener noreferrer">Edit on PlantUML</a> · [source]({{ site.baseurl }}/pictures/plantuml/infrastructure.puml)
 
-## Container topology
+Compose services resolve PostgreSQL by the name `postgres`. The demo Nginx gateway reaches the host AZFlow process at `host.docker.internal:8000`; the database address is configured through environment variables. This single-instance topology needs no discovery service.
 
-Docker Compose is used to reproduce the development and demonstration environment. The default application topology contains the `azflow` and `postgres` services. PostgreSQL is addressed inside the Compose network by the service name `postgres`, so no additional service-discovery mechanism is necessary for the current deployment.
+## Database connections
 
-The development profile adds `demo-web`, which serves the browser demonstrators through Nginx, and Adminer for database inspection. These components support development and demonstration and are not required by the AZFlow application architecture. The PostgreSQL data directory is backed by a named Docker volume so that data can survive container recreation.
-
-The `poe dev` launcher starts PostgreSQL, Adminer and the Nginx demo gateway through Docker Compose, then runs AZFlow locally with Uvicorn. The resulting development topology is shown below.
-
-![AZFlow development deployment]({{ site.baseurl }}/pictures/infrastructure-deployment.svg)
-
-*Figure — Deployment of the local development and demonstration environment.*
-
-<a href="https://www.plantuml.com/plantuml/uml/VLDBRnCn4BxxLunoWaCUF5NbW1eAfKX0GpS82Qs4dDtPZHNlZ6KxJGFgVsUythJfXTkCv_jcldduF4Jjuwwpoc8J8J9uqsuYrCPZ5GsJ2bj3JdlTGTZeclU6McYq3NWIiOOm7Xm2-xZXau3JrLQtMCI3HKWPDRKMbOecoiFYrwNbFTHuYvPTXnH1Kor-nnIYrwc-UCxo8GML8guHHkyzxmFw4UW0wsmVGnzEKcqun1wJ3FYh02hk75EAZNBfadxSceezmHGkTOYBvUUIvcUpsQmdwZ-DW9uIltArNJZ7XcAgKl3ELrZICqFWF5SOmlEUsmbE2RMHCIHXugA7YvGeO8-eijqh0yZwK-lZFQvB-jOQkWFHqcCfUIUuHTt9o7qlzcm68WOzQPjLvrYFhdNKQor5HaiPGkkn-Fu5NhmLtflNhru-vRcC23rHZi8qkfA6NPkIb3HqSCjsr-K6iYdmUtMlrB0968_VPRamXwlLQgcoavxpF8Tt6VbFN1SfQomfxMXIzoKcHrNz8axfkJ7XJmTpgeQKANpKB_77PajQNXUhJpSVYzzNOaZHvVNDIXrJ_OSdlSXj893iR_uud0TqekO9236D21fZ1V2WQ3W1ueYmvXYv0sxouyNE-tHDmQOAJFOmKOjqF_Mk_tJIgdOo1AWqoRTnLWlCn8b2-HufeJeNA_tQVm00" target="_blank" rel="noopener noreferrer">Edit on PlantUML</a> · [source]({{ site.baseurl }}/pictures/plantuml/infrastructure-deployment.puml)
-
-## Naming and service discovery
-
-The current topology does not require a dedicated discovery service. Inside Docker Compose, containers use Compose service names, for example `postgres` and `adminer`. The Nginx demo gateway reaches the locally running AZFlow process through `host.docker.internal:8000`, while AZFlow obtains the PostgreSQL host and port from environment variables. When the application image is run inside the Compose topology, the PostgreSQL hostname is configured as `postgres`.
-
-This is deliberately simple naming rather than dynamic service discovery: the project has one application instance and one database instance, so introducing a registry or load-balancing layer would not solve a requirement of the current slice.
-
-## External boundaries
-
-The browser clients reach the AZFlow API over HTTP and maintain WebSocket connections for live display updates. PostgreSQL is reached through its database connection, while appointment retrieval is hidden behind the `AppointmentSource` application port. In the current slice this port is wired to `MockAppointmentSource`; a production integration would provide another adapter for the hospital scheduling system without changing the check-in service.
-
-The composition module performs this wiring when the FastAPI application is created. It connects application services to PostgreSQL repositories and read models and creates one shared `WebSocketCallHub` for live display communication. This explicit composition keeps runtime dependencies visible and also allows tests to replace them with test implementations.
-
-## Deployment scope
-
-No load balancer, replicated application node, distributed cache or message broker is required for the project slice, and the report does not assume them. Those choices would depend on the availability, scale and network requirements of a real hospital deployment. The current design instead defines stable application boundaries that could be deployed differently later without moving those infrastructure concerns into the domain model.
+HTTP requests requiring persistence receive their own PostgreSQL connection. WebSocket-related reads use short-lived connections outside the asynchronous event loop to avoid blocking it.

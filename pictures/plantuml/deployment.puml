@@ -1,0 +1,31 @@
+@startuml
+left to right direction
+skinparam shadowing false
+skinparam linetype ortho
+skinparam componentStyle uml2
+skinparam nodesep 48
+skinparam ranksep 55
+
+title AZFlow - Package Deployment
+
+node "Application Host" as apphost {
+  node "Python Runtime" as runtime {
+    artifact "AZFlow package" as pkg
+    component "FastAPI / Uvicorn\nAZFlow server" as api
+    component "Database migrations" as migrations
+  }
+}
+
+database "PostgreSQL\n(externally managed)" as postgres
+
+node "Client Device" as device {
+  component "Browser Client" as client
+}
+
+pkg ..> api : provides
+pkg ..> migrations : provides
+client --> api : HTTP / WebSocket
+api --> postgres : SQL
+migrations ..> postgres : schema upgrade
+
+@enduml

@@ -3,71 +3,115 @@ top to bottom direction
 skinparam shadowing false
 skinparam classAttributeIconSize 0
 skinparam linetype ortho
-skinparam nodesep 35
-skinparam ranksep 45
+skinparam nodesep 40
+skinparam ranksep 48
 hide empty methods
 
 title AZFlow - Core Domain Model
 
 class PatientIdentifier <<value object>> {
-  type: str
-  value: str
+  +type: str
+  +value: str
+  --
+  +__post_init__(): None
 }
 
 class Appointment <<entity>> {
-  id: int
-  scheduled_at: datetime
+  +id: int
+  +scheduled_at: datetime
+  +patient_identifier: PatientIdentifier
+  +external_agenda: ExternalAgenda
+  +external_patient_reference: Optional[str]
+  +external_appointment_reference: Optional[str]
 }
 
 class DailyPresence <<entity>> {
-  id: int
-  operational_day: date
-  public_call_code: str
-  checked_in_at: datetime
+  +id: int
+  +patient_identifier: PatientIdentifier
+  +operational_day: date
+  +public_call_code: str
+  +ticket_master: TicketMaster
+  +checked_in_at: datetime
 }
 
 class ServiceAccess <<entity>> {
-  id: int
-  state: ServiceAccessState
+  +id: int
+  +daily_presence: DailyPresence
+  +agenda: Agenda
+  +appointment: Optional[Appointment]
+  +state: ServiceAccessState
+  --
+  +called(): ServiceAccess
+  +suspended(): ServiceAccess
+  +restored(): ServiceAccess
+  +cancelled_call(): ServiceAccess
+  +recalled(): ServiceAccess
+  +admitted(): ServiceAccess
 }
 
 class Agenda <<entity>> {
-  id: int
-  name: str
+  +id: int
+  +name: str
 }
 
 class ExternalAgenda <<entity>> {
-  external_reference: str?
-  source_name: str?
+  +agenda: Agenda
+  +source: ExternalSource
+  +external_reference: Optional[str]
+  +source_name: Optional[str]
 }
 
 class ExternalSource <<entity>> {
-  id: int
-  code: str
-  name: str
+  +id: int
+  +code: str
+  +name: str
+  +connector_type: str
+  +enabled: bool
 }
 
 class Queue <<entity>> {
-  id: int
-  status: QueueStatus
-  policy: QueuePolicy
+  +id: int
+  +status: QueueStatus
+  +policy: QueuePolicy
+  +ticket_master: TicketMaster
+  +agendas: list[Agenda]
+  --
+  +is_active(): bool
 }
 
 class TicketMaster <<entity>> {
-  id: int
-  prefix: str
+  +id: int
+  +prefix: str
 }
 
-Appointment --> PatientIdentifier : identifies
-DailyPresence --> PatientIdentifier : identifies
-Appointment "*" --> "1" ExternalAgenda : scheduled in
-ExternalAgenda "*" --> "1" Agenda : maps to
-ExternalAgenda "*" --> "1" ExternalSource : from
-DailyPresence "1" -- "0..*" ServiceAccess : groups
-ServiceAccess --> "1" Agenda : service
-ServiceAccess --> "0..1" Appointment : derived from
-Queue "*" -- "*" Agenda : serves
-Queue "*" --> "1" TicketMaster : uses
-DailyPresence "*" --> "1" TicketMaster : call-code namespace
+enum ServiceAccessState {
+  WAITING
+  CALLED
+  SUSPENDED
+  ADMITTED
+}
+enum QueuePolicy {
+  BY_ARRIVAL
+  BY_APPOINTMENT
+}
+enum QueueStatus {
+  ACTIVE
+  INACTIVE
+}
 
+Appointment --> PatientIdentifier
+Appointment "0..*" --> "1" ExternalAgenda
+ExternalAgenda "0..*" --> "1" ExternalSource
+ExternalAgenda "0..*" --> "1" Agenda
+DailyPresence --> PatientIdentifier
+DailyPresence "1" -- "0..*" ServiceAccess
+ServiceAccess "0..*" --> "1" Agenda
+ServiceAccess "0..*" --> "0..1" Appointment
+Queue "0..*" -- "0..*" Agenda
+Queue "0..*" --> "1" TicketMaster
+DailyPresence "0..*" --> "1" TicketMaster
+
+ServiceAccess ..> ServiceAccessState
+Queue ..> QueuePolicy
+Queue ..> QueueStatus
 @enduml

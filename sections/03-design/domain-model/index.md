@@ -6,81 +6,73 @@ nav_order: 2
 
 # Domain Model
 
-The main modelling problem in AZFlow is that an appointment is not the same thing as the operational journey of a patient inside the hospital. An appointment comes from an external scheduling system and describes that a service is planned at a certain time, while AZFlow has to represent what happens after the patient arrives: check-in, waiting, calling, suspension and admission. Keeping these two aspects separated avoids adding queue-management state to information owned by another system.
-
-The domain model therefore introduces an operational layer around the external appointment data. The central concepts are `DailyPresence` and `ServiceAccess`, together with `Agenda` and `Queue` for the organization of services.
+An external appointment describes a planned service; AZFlow must instead represent what happens after patient arrival. The model therefore keeps scheduling information separate from the operational journey managed by the queue system.
 
 | Concept | Role in AZFlow |
 | --- | --- |
-| `PatientIdentifier` | Value object used to identify the patient where identification is required, without introducing a local Patient registry. |
+| `PatientIdentifier` | Identifies the patient where required without introducing a local Patient registry. |
 | `Appointment` | Scheduling information received from an external source. |
 | `DailyPresence` | One patient's operational journey during an operational day. |
-| `ServiceAccess` | One service managed during a DailyPresence and the owner of its operational state. |
+| `ServiceAccess` | One service managed during a DailyPresence and owner of its operational state. |
 | `Agenda` | Local identity of a healthcare service. |
 | `ExternalAgenda` | Mapping between a local Agenda and an external scheduling source. |
-| `Queue` | Operational grouping of Agendas that defines how eligible accesses are ordered. |
-| `TicketMaster` | Namespace and prefix used when allocating public call codes. |
-| `ExternalSource` | Configuration of an external scheduling source connected to AZFlow. |
+| `Queue` | Group of Agendas with an ordering policy. |
+| `TicketMaster` | Namespace and prefix used to allocate public call codes. |
+| `ExternalSource` | Configuration of an external scheduling source. |
 
 ## Patient identification and daily presence
 
-AZFlow does not introduce a persistent `Patient` entity. For the current slice the patient is represented by a `PatientIdentifier`, a value object containing an identifier type and value. This is enough to find appointments during check-in without duplicating a patient registry that belongs to other hospital systems.
+AZFlow does not maintain a persistent `Patient` entity. The current slice uses `PatientIdentifier`, containing an identifier type and value, to retrieve appointments without duplicating a registry owned by another system.
 
-When check-in succeeds, AZFlow creates or reuses one `DailyPresence` for that identifier and operational day. A daily presence represents the patient's operational journey for that day, not the physical presence of the person in a specific room or location. It stores the check-in time and one public call code, which can be shown on public displays without exposing the patient identifier. The same daily presence can be related to multiple services, which is necessary because a patient may have more than one appointment during the same day.
+A successful check-in creates or reuses one `DailyPresence` for that identifier and operational day. It stores the check-in time and one public call code. The same presence may contain several services, so a patient with multiple appointments keeps one public identity for the whole day.
 
 ## Appointment and service access
 
-`Appointment` represents scheduling information obtained from an external source. It contains the scheduled time, the patient identifier and the external agenda information, but it deliberately has no AZFlow operational state.
+`Appointment` contains scheduling data and deliberately has no AZFlow queue state. Its operational counterpart is `ServiceAccess`, which belongs to a `DailyPresence` and a local `Agenda` and may reference the source appointment.
 
-For every service that has to be managed by AZFlow, the operational counterpart is a `ServiceAccess`. A service access belongs to one `DailyPresence` and one local `Agenda`, and it may refer to the appointment from which it was created. This separation means that two appointments of the same patient can become two independent service accesses while sharing the same daily presence and public call code.
-
-A `ServiceAccess` also owns its current operational state. It starts as `WAITING` and the domain object defines the valid transitions used by the application: it can be called, suspended and restored, a called access can be admitted or returned to waiting by cancelling the call, and an admitted access can be recalled. Invalid transitions are rejected by domain errors instead of being silently accepted.
+`ServiceAccess` owns its lifecycle. It starts in `WAITING`; valid transitions allow calling, suspension/restoration, admission, call cancellation and recall. Invalid transitions raise domain errors. As a frozen dataclass, each valid transition returns a new instance rather than mutating the existing one.
 
 ## Agendas and queues
 
-An `Agenda` represents a service known locally by AZFlow. The external scheduling system is kept separate through `ExternalAgenda`, which associates a local agenda with an `ExternalSource` and its external reference. In this way the local name and configuration can evolve without changing the information owned by the source system.
+`Agenda` identifies a service locally, while `ExternalAgenda` connects it to an `ExternalSource`. This mapping separates external scheduling identifiers from the internal organization of services.
 
-A `Queue` is an operational grouping of one or more agendas. An agenda can participate in queue configuration without becoming the queue itself, because the same scheduled service and the rule used to order patients are different concepts. The ordering policy therefore belongs to the queue. The current model supports `BY_APPOINTMENT`, where eligible accesses are ordered using their scheduled time, and `BY_ARRIVAL`, where the patient's check-in time determines the order.
+A `Queue` is a configurable operational view over one or more Agendas. The relationship is many-to-many: a Queue can combine services from different Agendas, and the same Agenda can be included in multiple Queues. For example, a shared arrival-order Queue may combine Agendas A and B, while a separate appointment-order Queue handles Agenda A alone. The current policies are `BY_APPOINTMENT`, ordered by scheduled time, and `BY_ARRIVAL`, ordered by check-in time.
 
-This distinction is important because it allows the same domain model to represent different organizational choices without modifying appointment data. Queue configuration decides how accesses are presented and selected, while the agenda keeps the identity of the service.
+Each `ServiceAccess` belongs to a single Agenda and retains one operational state even when that Agenda appears in multiple Queues. Queues therefore select and order accesses without owning or duplicating them. Although an Agenda normally needs to be assigned to a Queue to be operationally visible, the current domain relationship does not require every Agenda to belong to at least one Queue.
+
+The following example illustrates this configuration: Agenda A is included in both queues, while Agenda B is included only in Queue 2.
+
+![Example queue configuration]({{ site.baseurl }}/pictures/queue-configuration.svg)
+
+<a href="https://www.plantuml.com/plantuml/uml/TP5BJyCm48Jl_XMhtYEH28wWEYY7Ib3w4g8dv2RRnDIn8tiZMX3_7JUcbNcTl9hrDpEMnuw4fRvLJE6MW0nOMJS4bRHOaZIQkPtKdR2Y1TU8ohnANSDMA8VHHacDTEWGZAN6H0kpUV4sdCZAJKyuAOrUoZU4Y-YEDXKwxE3oAXAjqBilaIGfX68lsiwV2Snxx15kZTxAkhTYACb248oAFQ7LGW6lKLS2-0Y4WuB3EmDmfhSbmZKi3uwmXIVsyI-O1p3_4rn7uBSW_bCEDlbP3kNJGPsdWtbdb2mFtZnVF_FPx64oNTqNqrKK4Q0iGDblQB6OFF8x3p3_q2IvyJLyyUEGio3CqzEGiVmqZ7t3uyz_0W00" target="_blank" rel="noopener noreferrer">Edit on PlantUML</a> · [source]({{ site.baseurl }}/pictures/plantuml/queue-configuration.puml)
 
 ## Public call identity
 
-The public call code belongs to `DailyPresence` rather than to a single `ServiceAccess`. It is generated using a `TicketMaster`, which defines the prefix while persistence manages the daily sequence. As a consequence, a patient with multiple services during the same day keeps one public identity through the complete journey instead of receiving a different public code for every service.
-
-This also separates the identifier used internally for check-in from the information displayed in public areas. Displays work with the public call code and operational information and do not need the patient identifier.
+The public call code belongs to `DailyPresence`, not to a single `ServiceAccess`. `TicketMaster` defines its prefix while persistence manages the daily sequence. Public displays can therefore use the call code without exposing the patient identifier.
 
 ## Core class relationships
 
-The following UML class diagram summarizes the main domain concepts and their relationships. It intentionally omits location and display configuration because those structures support the workflow but are not part of the central patient-service model.
+The class diagram details the main domain objects, their attributes, public operations, enumerations and association multiplicities. Location and display configuration are omitted to keep the patient-service model readable.
 
 ![AZFlow core domain model]({{ site.baseurl }}/pictures/domain-model.svg)
 
-<a href="https://www.plantuml.com/plantuml/uml/ZLJ9Rjim4BtpAmO-5b2Geir529mOJGla4C25U-f5eAbnp9eY2NBaH2twxnrANYJRCdgnDSjxysQH7YF9G7Lb13aFv63fY5m5fGweI3ihuaPRBuEi8AvbwTwqVOMLD15x4MLaZ3EYe9SruRDoTg5_8zpsKeosI8r7S87MhXUmhiI87ZxTzPn1saroVhuJQrqYOEMfWGePMaOXI9D1cFtyPjmRPF351OGdLqbjuONfZ12j8fXBqcZfkUGVlT8OuFv-AqtDAfQ_kB_f5Fu8WAGhXqY1dzjmP_pTqyoyTzfInInCaBYesK5rcGE7-2cgDPQrmRAGb4Cf2KbNU2Hvajeqyy2zMeNZDCvZa6dmqXIbR3eczljwQRGgb3IcKDpZNYzNLHikgkr8tGM6hLOuKmhP6fTFZCo7sOlawutX5Mqfnocih4udz_MTC70hbw6uYnO1LnZIN5huGvBZwg2mE50-d7CksfHnEVqfNP3slSOQhy-ZZdcNjcYDj0N7IsXstdbh71b_QDu4lSX8xQ6D47jkLhyVnFHlAykc5qwMWNiZYk4L_GUWpp_vC6aXau-Jqytan_jbdU8asWSU09NqaRyOrt9FLfN3AhZgf8UKbsKmkRsvOUJmMdDu3QxsKGpTPr9Y5xwKnhGfipS5Vaamw2qtsghfxg1JtVuDM7c2_OIkxc3HETJnR35NijCRdANRR8yoUicwnIENJ1_XVm00" target="_blank" rel="noopener noreferrer">Edit on PlantUML</a> · [source]({{ site.baseurl }}/pictures/plantuml/domain-model.puml)
+<a href="https://www.plantuml.com/plantuml/uml/ZLRTRzCm47_FNs7jYGzr6X8FA48JOIqeqjOLMa0mJPQRt3Opnuxiow0W_dVEJjh6NHljfRhp_Uxx8ttdK5XiAfMWgHaQjZI8fcAbj52WD3fnzrBNmegAkJjHcbzItx8ReHpq98KIpcM8LYuRXBmmUYx_03lfGPJKWAiQcB5uPte2RKfmKBFNVRGL-ZuyladkP0aCgXfNh09IBLsIe4G5BFlnGPbVRCJEZ0KsDfMGcbsGEPKa8I8s4oX1OrxIZxoHODdRjmz2DHJ5yYVbTthA_YQClVI1fSoXzKm0hBdHo3znNXk7N6g9d3zxdhAfqP3yMxl9wjf8ZHLv8GVU5wxMfcMPCf9vqXLtK3OAIYumPQL0G5c1bzHjd5nk0aqVn-w1y1l1Qg6uk0LTYfHDkeSiy15aRTJ23LZG1ULqMVkM2dL5oLt7zhOf75RO93mMKgrcblf6gA6KdvoOgS6ArXSlnQejJx3GB9KiU26KuWNrTjCcbCKz8A-4Gszr4TYBm7anrPeUIkfPNErD3dEm3xA0h2Y0k84SIfyihxjiqpXv3rZtOjk3NZLxDUoDIIW-hHwIlIYGERPvjtFdiuRI3rm42igDgydT0Ib5XxGK-uM5eC2zuL3L0_e3haLPISHzmkr6X58CLLMBgklbHYcUvKVAZyliJ6DzHzQAyy17Spqq_AqwRoCvCEcnwQ64ek7SPXSaMjEnCPP7TmQqM5A9KpgvHcqzVcgW6NJanwPnQGkS1oOiYg4zMNNFiy0yOKtQef8r9HrUjQMztioVT5pGL-01VAlZCFk61Yy0TK3-tdGQT5FjcVYWzYtB5_dq8r5dsVdvP4p4_CjyDfcE0vsDB_B5WiX_hPLUea7z_NUUVVwSVytEEsOskyodYul9T16fj2KBAjdP8lyw8IAVTYI5sB_cez7fddlLHnoT71-_E0h0erT7k_TuPwGFWBkv7GPt5kFJkp--6EELHwErkNXXuoEut-DX394Ujgr6qWxl1hEcEaixqjPBD94xaGyWTy8wFZxTTqXRZrxONukTrsw7tb6C_e_GVm00" target="_blank" rel="noopener noreferrer">Edit on PlantUML</a> · [source]({{ site.baseurl }}/pictures/plantuml/domain-model.puml)
 
 ## Location and display configuration
 
-Rooms, totems, monitors and the location hierarchy are configuration concepts used by the operational workflow, but they are intentionally not embedded in the core `ServiceAccess` domain object. A call resolves a configured Room and its identifier is persisted with the operational access, while application ports expose the location and monitor information required by operators and displays.
-
-This keeps the central service lifecycle independent from the physical topology. The current persistence model can represent a recursive `LocationNode` hierarchy, attach Rooms and Totems to it and define the scope of waiting-room monitors without making those infrastructure and display concerns part of the basic service-access state model.
-
-## Model boundaries
-
-The resulting model separates three kinds of information that would otherwise be easy to mix: external scheduling information in `Appointment` and `ExternalAgenda`, AZFlow operational state in `DailyPresence` and `ServiceAccess`, and organizational configuration in `Agenda`, `Queue`, `TicketMaster` and the location-related structures. Application services coordinate these concepts, while repositories and read models are responsible for their persistent representation and for queries that combine them.
-
-This separation is also the boundary used for future integrations: replacing the current appointment source does not require changing the operational lifecycle, and changes to the physical location or display configuration do not change the meaning of an appointment or a service access.
+Rooms, Totems, monitors and the `LocationNode` hierarchy support the workflow but are not embedded in `ServiceAccess`. A call stores the selected Room with the operational access, while dedicated application ports expose the topology needed by operators and displays.
 
 ## DDD interpretation
 
-The model uses Domain-Driven Design concepts where they help describe the problem, but the current vertical slice does not introduce a complete DDD framework or explicit aggregate-root abstractions. AZFlow can be considered one Queue Management bounded context, while the external scheduling system remains outside that context and is translated at the `AppointmentSource` boundary.
+The model uses selected Domain-Driven Design concepts without implementing a complete DDD framework. AZFlow is treated as one queue-management bounded context; external scheduling stays outside and is translated at the `AppointmentSource` boundary.
 
 | DDD concept | AZFlow interpretation |
 | --- | --- |
-| **Bounded context** | The implemented slice is one Queue Management / patient-flow context; external scheduling remains outside it. |
+| **Bounded context** | Queue management / patient flow; external scheduling remains outside. |
 | **Value object** | `PatientIdentifier`. |
-| **Entities** | `Appointment`, `DailyPresence`, `ServiceAccess`, `Agenda`, `ExternalAgenda`, `Queue`, `TicketMaster` and `ExternalSource`. |
-| **Domain rules** | `ServiceAccess` defines the valid state transitions and rejects invalid ones. |
-| **Application services** | Check-in, Queue View, Calling and State Management coordinate use cases around the domain model. |
-| **Repositories and ports** | Interfaces are defined in the application layer and implemented by infrastructure adapters. |
-| **Factories** | No dedicated domain factories are introduced; creation is coordinated by application services and repositories where persistence-generated identity or sequences are required. |
-| **Domain events** | The model does not use a general domain-event architecture; `CallEvent` and display-state events are application-level notifications used to update displays. |
+| **Entities** | `Appointment`, `DailyPresence`, `ServiceAccess`, `Agenda`, `ExternalAgenda`, `Queue`, `TicketMaster`, `ExternalSource`. |
+| **Domain rules** | `ServiceAccess` validates state transitions. |
+| **Application services** | Coordinate check-in, queue view, calling and state management. |
+| **Repositories and ports** | Defined by the application layer and implemented by adapters. |
+| **Factories** | No dedicated domain factories; creation is coordinated by services and repositories. |
+| **Domain events** | No general domain-event model; call/display events are application notifications. |

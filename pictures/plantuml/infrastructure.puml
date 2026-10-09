@@ -1,0 +1,49 @@
+@startuml
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam componentStyle uml2
+skinparam nodesep 35
+skinparam ranksep 30
+
+title AZFlow - Infrastructure
+
+' --- CLIENTS ---
+package "Clients" {
+  [Operator Console] as client_admin
+  [Check-in Kiosks] as client_kiosk
+  [Displays] as client_display
+}
+
+' --- DEVELOPMENT HOST ---
+node "Dev Host" as host {
+
+  frame "Docker Compose" as compose {
+    node "Nginx (:80)" as nginx
+    node "Adminer (:8080)" as adminer
+    database "PostgreSQL 16" as postgres
+  }
+
+  component "AZFlow Core" as azflow
+  interface "AppointmentSource" as port_source
+  component "DemoAppointmentSource\n(In-Memory)" as mock
+}
+
+' --- CONNECTIONS ---
+
+' Clients -> Nginx (HTTP & WebSocket)
+client_admin -down-> nginx : HTTP
+client_kiosk -down-> nginx : HTTP
+client_display -down-> nginx : HTTP / WSS
+
+' Nginx Reverse Proxy & Adminer
+nginx -down-> azflow : HTTP / WSS
+nginx -right-> adminer : /adminer/
+
+' Plugin Architecture
+azflow -right- port_source
+mock .left.|> port_source
+
+' DB Connections
+azflow -down-> postgres : SQL
+adminer -down-> postgres
+@enduml

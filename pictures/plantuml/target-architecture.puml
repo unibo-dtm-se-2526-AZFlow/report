@@ -1,0 +1,88 @@
+@startuml
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam componentStyle uml2
+skinparam nodesep 50
+skinparam ranksep 40
+
+title AZFlow - Target Component Architecture
+
+' --- CLIENTS (ALL TOP) ---
+package "Clients" {
+  package "Hospital LAN Clients" {
+    [Admin / Staff\nWeb Console] as client_admin
+    [Check-in Kiosks] as client_kiosk
+    [Displays\n(WaitingRoom & Door)] as client_display
+  }
+
+  package "External Clients" {
+    [Patient Mobile App] as client_mobile
+  }
+}
+
+' --- AZFLOW SYSTEM APPLIANCE ---
+package "AZFlow Appliance (HA Cluster)" as appliance {
+
+  interface "HTTPS / WSS\nIngress" as IF_INGRESS
+  interface "External\nSourcePort" as port_appointment
+  interface "AuthPort" as port_auth
+
+  [Load Balancer & Proxy\n<<HA - VIP>>] as lb
+  [AZFlow Core Engine\n<<HA - Active/Active>>] as core
+  [Event Publisher\n<<HA - Redis Cluster>>] as pubsub
+  [Database\n<<HA - Primary/Standby>>] as db
+
+  package "Plugins" {
+    [HIS Adapter] as adapter_his
+    [RIS Adapter] as adapter_ris
+    [Hospital Auth Adapter] as adapter_auth
+  }
+}
+
+' --- HOSPITAL INTERNAL SERVICES ---
+package "Hospital Internal Services (LAN)" {
+  [HIS / CUP System] as sys_his
+  [RIS / PACS System] as sys_ris
+  [Hospital Directory / SSO\n(LDAP / SAML)] as sys_auth
+  [Hospital SMS / Mail Gateway] as sys_sms
+}
+
+' --- MANAGED CLOUD SERVICES ---
+package "Public Internet" {
+  cloud "Push Cloud\n(FCM / APNs)" as cloud_push
+}
+
+' --- CONNECTIONS ---
+
+' LAN Clients to Ingress
+client_admin ..> IF_INGRESS : HTTPS (LAN)
+client_kiosk ..> IF_INGRESS : HTTPS (LAN)
+client_display <.. IF_INGRESS : WSS (LAN Real-Time)
+
+' Internal Appliance Routing
+IF_INGRESS - [lb]
+[lb] --> [core] : REST
+[lb] <-- [pubsub] : WSS
+
+[core] --> [pubsub] : events
+[core] --> [db] : data
+
+' Internal Plugin Ports
+[core] -down- port_appointment
+[core] -down- port_auth
+
+[adapter_his] .up.|> port_appointment
+[adapter_ris] .up.|> port_appointment
+[adapter_auth] .up.|> port_auth
+
+' Hospital Internal Integrations (LAN)
+[adapter_his] <--> [sys_his] : HL7 / FHIR
+[adapter_ris] <--> [sys_ris] : DICOM / HL7
+[adapter_auth] <--> [sys_auth] : LDAP / OIDC
+[core] --> [sys_sms] : SMTP / REST
+
+' Internet Push Notification Flow for Mobile
+[pubsub] --> cloud_push : HTTPS Push Request
+cloud_push ..> client_mobile : Push Notification (Internet)
+
+@enduml
