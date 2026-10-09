@@ -20,19 +20,19 @@ Service -> Repo : resolve Room
 Repo --> Service : room id
 
 loop until conditional transition succeeds
-  Service -> Repo : try_call(access, room, queue)
-  alt state is still WAITING
-    Repo --> Service : CALLED ServiceAccess
-  else concurrent change
-    Repo --> Service : no transition
-    Service -> Reader : reload candidates
-    Reader --> Service : current candidates
-  end
+    Service -> Repo : try_call(access, room, queue)
+    alt state is still WAITING
+        Repo --> Service : CALLED ServiceAccess
+    else concurrent change
+        Repo --> Service : no transition
+        Service -> Reader : reload candidates
+        Reader --> Service : current candidates
+    end
 end
 
 Service -> Hub : publish CallEvent
 Hub -> Hub : resolve affected monitors
-Hub -->> Displays : WebSocket update
+Hub --> Displays : WebSocket update
 Service --> API : CallResult
 API --> Operator : called access + Room
 @enduml
