@@ -34,7 +34,7 @@ which, on a real release, invokes the equivalent Poetry version/build/publish op
 
 ## License
 
-AZFlow uses the **Apache License 2.0**, inherited from the course template and deliberately retained. It is permissive, allows modification and redistribution, and includes an explicit patent grant. Source and package use the same license.
+AZFlow uses the **Apache License 2.0** for both source code and the distributed package. This permissive license allows modification and redistribution and includes an explicit patent grant.
 
 ## Versioning
 
