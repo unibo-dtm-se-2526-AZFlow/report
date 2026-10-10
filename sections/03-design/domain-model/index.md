@@ -62,6 +62,12 @@ The class diagram details the main domain objects, their attributes, public oper
 
 Rooms, Totems, monitors and the `LocationNode` hierarchy support the workflow but are not embedded in `ServiceAccess`. A call stores the selected Room with the operational access, while dedicated application ports expose the topology needed by operators and displays.
 
+The interactive example below extends the demo topology with two wings and an additional floor-level display. Every folder represents a `LocationNode`; devices belong to a node. Select a waiting-room monitor to highlight its configured subtree. Scopes can overlap: the BAR display covers the entire hospital, while the Ground Floor display covers both wings.
+
+{% include location-topology.html %}
+
+<script src="{{ site.baseurl }}/pictures/location-topology.js" defer></script>
+
 ## DDD interpretation
 
 The model uses selected Domain-Driven Design concepts without implementing a complete DDD framework. AZFlow is treated as one queue-management bounded context; external scheduling stays outside and is translated at the `AppointmentSource` boundary.

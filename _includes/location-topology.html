@@ -1,0 +1,40 @@
+<div id="az-topology" class="az-topology">
+<style>
+.az-topology{max-width:760px;margin:1rem 0;font-size:.9rem}
+.az-topology .tree{padding:12px;border:1px solid #cbd5e1;border-radius:10px}
+.az-topology .children{margin-left:18px;padding-left:12px;border-left:1px solid #cbd5e1}
+.az-topology .node{display:flex;align-items:center;gap:8px;padding:6px;border:1px solid transparent;border-radius:6px}
+.az-topology .name{flex:1}.az-topology .type{color:#64748b;font-size:.73rem}
+.az-topology .monitor{cursor:pointer}.az-topology .monitor:hover,.az-topology .monitor:focus-visible{outline:1px solid #64748b}
+.az-topology .active{background:var(--scope-bg);border-color:var(--scope-color)}.az-topology .dim{opacity:.3}
+.az-topology .status{margin-top:10px;padding:10px;border:1px solid #cbd5e1;border-radius:8px}
+@media(max-width:500px){.az-topology .children{margin-left:8px;padding-left:7px}.az-topology .type{font-size:.62rem}}
+</style>
+<p>Hover over or select a waiting-room monitor to highlight its scope.</p>
+<div class="tree">
+<div class="node" data-id="h">📂 <strong class="name">HOSPITAL</strong><span class="type">LocationNode</span></div>
+<div class="children">
+<div class="node" data-id="t">🖥️ <span class="name">Totem 1</span><span class="type">Totem</span></div>
+<div class="node monitor" data-id="bar" data-scope="h" role="button" tabindex="0">📺 <strong class="name">BAR</strong><span class="type">WaitingRoomMonitor</span></div>
+<div class="node" data-id="g">📂 <strong class="name">Ground Floor</strong><span class="type">LocationNode</span></div>
+<div class="children">
+<div class="node monitor" data-id="wg" data-scope="g" role="button" tabindex="0">📺 <span class="name">Ground Floor Display</span><span class="type">WaitingRoomMonitor</span></div>
+<div class="node" data-id="a">📂 <strong class="name">Wing A</strong><span class="type">LocationNode</span></div>
+<div class="children">
+<div class="node monitor" data-id="wa" data-scope="a" role="button" tabindex="0">📺 <span class="name">Waiting Room A</span><span class="type">WaitingRoomMonitor</span></div>
+<div class="node" data-id="r1">🚪 <span class="name">Room 1</span><span class="type">Room</span></div>
+<div class="node" data-id="r2">🚪 <span class="name">Room 2</span><span class="type">Room</span></div>
+</div>
+<div class="node" data-id="b">📂 <strong class="name">Wing B</strong><span class="type">LocationNode</span></div>
+<div class="children">
+<div class="node monitor" data-id="wb" data-scope="b" role="button" tabindex="0">📺 <span class="name">Waiting Room B</span><span class="type">WaitingRoomMonitor</span></div>
+<div class="node" data-id="r3">🚪 <span class="name">Room 3</span><span class="type">Room</span></div>
+<div class="node" data-id="r4">🚪 <span class="name">Room 4</span><span class="type">Room</span></div>
+</div></div>
+<div class="node" data-id="f">📂 <strong class="name">First Floor</strong><span class="type">LocationNode</span></div>
+<div class="children">
+<div class="node monitor" data-id="wf" data-scope="f" role="button" tabindex="0">📺 <span class="name">Waiting Room 11</span><span class="type">WaitingRoomMonitor</span></div>
+<div class="node" data-id="r11">🚪 <span class="name">Room 11</span><span class="type">Room</span></div>
+</div></div></div>
+<div class="status" aria-live="polite"><strong class="heading">Select a waiting-room monitor</strong><div class="detail">Highlighted Rooms receive calls within the selected monitor scope.</div></div>
+</div>
