@@ -30,7 +30,7 @@ npm install
 npx semantic-release
 ```
 
-which, on a real release, invokes the equivalent Poetry version/build/publish operations. No release branch is used. Tags use `v<major>.<minor>.<patch>`. The **v3.0.x release series** introduces explicit appointment-source configuration through the breaking change `feat(config)!`, replacing the automatic mock setup of v2.0.1. Each release receives its own exact version tag.
+On a real release, this command invokes the corresponding Poetry version, build and publish operations. No release branch is used. Tags follow the `v<major>.<minor>.<patch>` format, and each release receives its own version tag.
 
 ## License
 
@@ -47,6 +47,6 @@ AZFlow follows **Semantic Versioning** (`MAJOR.MINOR.PATCH`). Version selection 
 | `fix`, `docs`, `perf`, `revert`, `chore(core-deps)` | **PATCH** |
 | `test`, `ci`, `build`, `style`, `refactor`, general `chore` | no release alone |
 
-The `!` marker takes precedence. The `totem_reference` to `totem_id` API change, for example, produced **v2.0.0**.
+The `!` marker takes precedence over the commit type. For example, renaming a field in the public API is a breaking change and triggers a MAJOR release.
 
 There is one versioned product, so wheel, source distribution, Git tag, GitHub Release, TestPyPI package and changelog are aligned by the same semantic-release run. If no commit since the previous tag requires a release, nothing is published.
