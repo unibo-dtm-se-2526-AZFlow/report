@@ -4,128 +4,136 @@ hide stereotypes
 skinparam shadowing false
 skinparam linetype ortho
 skinparam classAttributeIconSize 0
+skinparam classFontSize 12
+skinparam classAttributeFontSize 11
+skinparam ArrowColor #637386
+skinparam classBorderColor #8191A4
+skinparam classFontColor #283443
+skinparam backgroundColor white
+skinparam nodesep 36
+skinparam ranksep 48
 left to right direction
 
-title AZFlow persistent data model (main relationships)
+title AZFlow - Main persistent data relationships
 
-package "External scheduling" {
-  entity external_source {
-    * id : integer <<PK>>
-    --
-    code : text
-  }
-
-  entity external_agenda {
-    * id : integer <<PK>>
-    --
-    agenda_id : integer <<FK>>
-    external_source_id : integer <<FK>>
-    external_reference : text
-  }
-
-  entity appointment {
-    * id : integer <<PK>>
-    --
-    scheduled_at : timestamp
-    external_agenda_id : integer <<FK>>
-    patient_identifier_type : text
-    patient_identifier_value : text
-  }
-}
-
-package "Operational flow" {
-  entity daily_presence {
-    * id : integer <<PK>>
-    --
-    operational_day : date
-    public_call_code : text
-    ticket_master_id : integer <<FK>>
-    checked_in_at : timestamp
-    totem_id : integer <<FK>>
-  }
-
-  entity service_access {
-    * id : integer <<PK>>
-    --
-    daily_presence_id : integer <<FK>>
-    agenda_id : integer <<FK>>
-    appointment_id : integer <<FK>>
-    room_id : integer <<FK>>
-    state : text
-  }
-
-  entity service_access_transition {
-    * id : integer <<PK>>
-    --
-    service_access_id : integer <<FK>>
-    previous_state : text
-    resulting_state : text
-    occurred_at : timestamp
-    queue_id : integer <<FK>>
-  }
-}
-
-package "Queue configuration" {
-  entity agenda {
-    * id : integer <<PK>>
-    --
-    name : text
-  }
-
-  entity queue {
-    * id : integer <<PK>>
-    --
-    status : text
-    policy : text <<FK>>
-    ticket_master_id : integer <<FK>>
-  }
-
-  entity queue_policy {
-    * code : text <<PK>>
-    --
-    label : text
-  }
-
-  entity queue_agenda {
-    * queue_id : integer <<PK,FK>>
-    * agenda_id : integer <<PK,FK>>
-  }
-
-  entity ticket_master {
-    * id : integer <<PK>>
-    --
-    prefix : text
-  }
-
-  entity ticket_sequence {
-    * ticket_master_id : integer <<PK,FK>>
-    * operational_day : date <<PK>>
-    --
-    last_number : integer
-  }
-}
-
-entity room {
-  * id : integer <<PK>>
+entity "external_source" as external_source #EAF3FE {
+  * id : int <<PK>>
   --
+  code : text
+}
+entity "external_agenda" as external_agenda #EAF3FE {
+  * id : int <<PK>>
+  --
+  external_source_id : int <<FK>>
+  agenda_id : int <<FK>>
+  external_reference : text
+}
+entity "appointment" as appointment #EAF3FE {
+  * id : int <<PK>>
+  --
+  external_agenda_id : int <<FK>>
+  scheduled_at : timestamp
+}
+entity "agenda" as agenda #F0EDFB {
+  * id : int <<PK>>
+  --
+  name : text
+}
+entity "queue_agenda" as queue_agenda #F0EDFB {
+  * queue_id : int <<PK, FK>>
+  * agenda_id : int <<PK, FK>>
+}
+entity "queue" as queue #F0EDFB {
+  * id : int <<PK>>
+  --
+  policy : text <<FK>>
+  ticket_master_id : int <<FK>>
+  status : text
+}
+entity "queue_policy" as queue_policy #F0EDFB {
+  * code : text <<PK>>
+  --
+  label : text
+}
+entity "ticket_master" as ticket_master #F0EDFB {
+  * id : int <<PK>>
+  --
+  prefix : text
+}
+entity "ticket_sequence" as ticket_sequence #F0EDFB {
+  * ticket_master_id : int <<PK, FK>>
+  * operational_day : date <<PK>>
+  --
+  last_number : int
+}
+entity "daily_presence" as daily_presence #FFF3D9 {
+  * id : int <<PK>>
+  --
+  operational_day : date
+  ticket_master_id : int <<FK>>
+  totem_id : int <<FK>>
+  public_call_code : text
+  checked_in_at : timestamp
+}
+entity "service_access" as service_access #FFE5B5 {
+  * id : int <<PK>>
+  --
+  daily_presence_id : int <<FK>>
+  appointment_id : int <<FK>>
+  agenda_id : int <<FK>>
+  room_id : int <<FK>>
+  state : text
+}
+entity "service_access_transition" as service_access_transition #FFF3D9 {
+  * id : int <<PK>>
+  --
+  service_access_id : int <<FK>>
+  queue_id : int <<FK>>
+  occurred_at : timestamp
+  previous_state : text
+  resulting_state : text
+}
+entity "location_node" as location_node #EAF7EF {
+  * id : int <<PK>>
+  --
+  parent_id : int <<FK>>
+  label : text
+}
+entity "totem" as totem #EAF7EF {
+  * id : int <<PK>>
+  --
+  location_node_id : int <<FK>>
+}
+entity "room" as room #EAF7EF {
+  * id : int <<PK>>
+  --
+  location_node_id : int <<FK>>
   room_reference : text
 }
 
-external_source "1" -- "0..*" external_agenda
-agenda "1" -- "0..*" external_agenda
-external_agenda "1" -- "0..*" appointment
+' Relationships in ER notation
+external_source ||--o{ external_agenda
+agenda ||--o{ external_agenda
+external_agenda ||--o{ appointment
 
-daily_presence "1" -- "0..*" service_access
-appointment "0..1" -- "0..*" service_access : source
-agenda "1" -- "0..*" service_access
-room "0..1" -- "0..*" service_access : call-time room
-service_access "1" -- "0..*" service_access_transition
-queue "0..1" -- "0..*" service_access_transition : call provenance
+appointment |o--o{ service_access
+agenda ||--o{ service_access
+daily_presence ||--o{ service_access
+room |o--o{ service_access
 
-queue_policy "1" -- "0..*" queue
-queue "1" -- "0..*" queue_agenda
-agenda "1" -- "0..*" queue_agenda
-ticket_master "1" -- "0..*" queue
-ticket_master "1" -- "0..*" daily_presence
-ticket_master "1" -- "0..*" ticket_sequence
+service_access ||--o{ service_access_transition
+queue |o--o{ service_access_transition
+
+queue_policy ||--o{ queue
+ticket_master ||--o{ queue
+queue ||--o{ queue_agenda
+agenda ||--o{ queue_agenda
+
+ticket_master ||--o{ daily_presence
+ticket_master ||--o{ ticket_sequence
+
+location_node |o--o{ location_node : parent
+location_node ||--o{ room
+location_node ||--o{ totem
+totem |o--o{ daily_presence
 @enduml
