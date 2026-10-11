@@ -111,6 +111,17 @@ entity "room" as room #EAF7EF {
   room_reference : text
 }
 
+entity "room_monitor" as room_monitor #EAF7EF {
+  * id : int <<PK>>
+  --
+  room_id : int <<FK, UNIQUE>>
+}
+entity "waiting_room_monitor" as waiting_room_monitor #EAF7EF {
+  * id : int <<PK>>
+  --
+  label : text
+}
+
 ' Relationships in ER notation
 external_source ||--o{ external_agenda
 agenda ||--o{ external_agenda
@@ -136,4 +147,6 @@ location_node |o--o{ location_node : parent
 location_node ||--o{ room
 location_node ||--o{ totem
 totem |o--o{ daily_presence
+room ||--o| room_monitor
+waiting_room_monitor }o--o{ location_node : scope
 @enduml
